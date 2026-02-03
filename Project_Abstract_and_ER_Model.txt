@@ -1,0 +1,96 @@
+# PHARMACY MANAGEMENT SYSTEM - PROJECT ABSTRACT AND ER MODEL
+
+## Abstract
+
+The Pharmacy Management System is a comprehensive web-based solution designed to streamline and automate the operations of a pharmacy business. The system addresses key challenges faced by pharmacies, including inventory management, sales tracking, expiration date monitoring, and business analytics. 
+
+This application enables pharmacy staff to efficiently manage their medicine inventory, process sales transactions, track supplier information, and handle prescriptions. It features a role-based access control system that differentiates between administrator and staff privileges, ensuring appropriate access to sensitive operations and data.
+
+The system's primary goals are to:
+1. Reduce manual record-keeping and associated errors
+2. Optimize inventory levels based on sales patterns
+3. Prevent losses due to expired medicines
+4. Generate actionable insights through sales analytics
+5. Improve customer service through faster prescription processing
+6. Enhance decision-making with comprehensive reporting features
+
+## ER Model
+
+The database schema consists of the following entities and relationships:
+
+### Entities:
+
+1. **MEDICINES**
+   - id (PK)
+   - name
+   - description
+   - inventory_price
+   - sale_price
+   - created_at
+   - updated_at
+
+2. **INVENTORY_LOGS**
+   - id (PK)
+   - medicine_id (FK references MEDICINES)
+   - quantity
+   - type (enum: 'in', 'out')
+   - created_at
+
+3. **SALES**
+   - id (PK)
+   - medicine_id (FK references MEDICINES)
+   - quantity
+   - total_price
+   - sale_date
+
+4. **USERS**
+   - id (PK)
+   - username (unique)
+   - password
+   - email (unique)
+   - role (enum: 'admin', 'staff')
+   - created_at
+
+### Relationships:
+
+1. **MEDICINES to INVENTORY_LOGS**: One-to-Many
+   - One medicine can have multiple inventory log entries
+   - Each inventory log entry is associated with exactly one medicine
+
+2. **MEDICINES to SALES**: One-to-Many
+   - One medicine can be included in multiple sales
+   - Each sale record is associated with exactly one medicine
+
+### Additional Implied Entities (from system functionality):
+
+5. **SUPPLIERS**
+   - Information about medicine suppliers
+   - Linked to medicines for tracking source
+
+6. **PRESCRIPTIONS**
+   - Patient prescription information
+   - Possibly linked to sales and medicines
+
+7. **EXPIRATION_TRACKING**
+   - Information about medicine expiration dates
+   - Linked to medicines and inventory
+
+### ER Diagram Relationships:
+
+```
++-------------+     1       M    +----------------+
+| MEDICINES   |<--------------->| INVENTORY_LOGS |
++-------------+                 +----------------+
+       ^
+       | 1
+       |
+       | M
++-------------+                 +----------------+
+| SALES       |                 | USERS          |
++-------------+                 +----------------+
+
+(Additional entities like SUPPLIERS, PRESCRIPTIONS, etc., would connect to 
+MEDICINES or SALES depending on specific implementation)
+```
+
+The database design follows normalization principles to reduce redundancy and ensure data integrity. Foreign key constraints maintain referential integrity between related entities. 
