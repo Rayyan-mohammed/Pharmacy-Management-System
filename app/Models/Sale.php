@@ -6,7 +6,9 @@ class Sale {
     public $id;
     public $medicine_id;
     public $quantity;
+    public $unit_price;
     public $total_price;
+    public $profit;
     public $customer_name;
     public $sale_date;
 
@@ -17,22 +19,26 @@ class Sale {
     // Create new sale
     public function create() {
         $query = "INSERT INTO " . $this->table_name . "
-                (medicine_id, quantity, total_price, customer_name)
+                (medicine_id, quantity, unit_price, total_price, profit, customer_name)
                 VALUES
-                (:medicine_id, :quantity, :total_price, :customer_name)";
+                (:medicine_id, :quantity, :unit_price, :total_price, :profit, :customer_name)";
 
         $stmt = $this->conn->prepare($query);
 
         // Sanitize input
         $this->medicine_id = htmlspecialchars(strip_tags($this->medicine_id));
         $this->quantity = htmlspecialchars(strip_tags($this->quantity));
+        $this->unit_price = htmlspecialchars(strip_tags($this->unit_price));
         $this->total_price = htmlspecialchars(strip_tags($this->total_price));
+        $this->profit = htmlspecialchars(strip_tags($this->profit));
         $this->customer_name = htmlspecialchars(strip_tags($this->customer_name));
 
         // Bind values
         $stmt->bindParam(":medicine_id", $this->medicine_id);
         $stmt->bindParam(":quantity", $this->quantity);
+        $stmt->bindParam(":unit_price", $this->unit_price);
         $stmt->bindParam(":total_price", $this->total_price);
+        $stmt->bindParam(":profit", $this->profit);
         $stmt->bindParam(":customer_name", $this->customer_name);
 
         if($stmt->execute()) {
@@ -92,4 +98,3 @@ class Sale {
         return $stmt;
     }
 }
-?> 

@@ -1,116 +1,398 @@
-/* Common Styles */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* Blue Theme */
+    --primary-color: #3b82f6;       /* Blue 500 */
+    --primary-hover: #2563eb;       /* Blue 600 */
+    
+    /* Supporting Colors */
+    --secondary-color: #64748b;     /* Slate 500 */
+    --success-color: #10b981;       /* Emerald 500 */
+    --warning-color: #f59e0b;       /* Amber 500 */
+    --danger-color: #ef4444;        /* Red 500 */
+    --info-color: #0ea5e9;          /* Sky 500 */
+    
+    /* Neutrals */
+    --light-bg: #f8fafc;            /* Slate 50 */
+    --dark-text: #1e293b;           /* Slate 800 */
+    --muted-text: #64748b;          /* Slate 500 */
+    --border-color: #e2e8f0;        /* Slate 200 */
+    
+    /* Components */
+    --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --input-focus: #bfdbfe;         /* Blue 200 */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+    --transition-speed: 0.2s;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #e6f7ff;
-    margin: 0;
-    padding: 0;
+    font-family: 'Poppins', sans-serif !important;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
 }
 
+/* Navbar Modernization */
 .navbar {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    box-shadow: 0 4px 20px -5px rgba(37, 99, 235, 0.4);
+    padding: 1rem 0;
+    backdrop-filter: blur(10px);
 }
 
-.navbar a {
-    color: white;
-    text-decoration: none;
-    margin: 0 10px;
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.container {
-    padding: 20px;
+.nav-link {
+    font-weight: 500;
+    transition: all var(--transition-speed);
 }
 
+.nav-link:hover {
+    transform: translateY(-1px);
+    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+/* Enhanced Card Styling */
 .card {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+    background: white;
+    overflow: hidden;
 }
 
+.card:hover {
+    box-shadow: var(--hover-shadow);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.card-title {
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+/* Modern Form Controls */
+.form-control, .form-select {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all var(--transition-speed);
+    background-color: #fff;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); /* Blue glow */
+    outline: none;
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--muted-text);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Pill Buttons */
 .btn {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50rem; /* Pill shape */
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all var(--transition-speed);
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
 }
 
-.btn:hover {
-    background-color: #0056b3;
+.btn-sm {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
 }
 
-.hidden {
-    display: none;
+.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
 }
 
-/* Dashboard Styles */
-.dashboard-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+.btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.5);
 }
 
+/* Dashboard Specifics & Interactive Elements */
 .dashboard-btn {
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--dark-text);
+    font-weight: 600;
+    padding: 2rem;
+    height: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color);
 }
 
 .dashboard-btn:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: linear-gradient(to bottom right, #fff, #eff6ff);
+    box-shadow: var(--hover-shadow);
 }
 
-/* Table Styles */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-th {
-    background-color: #f8f9fa;
-}
-
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    justify-content: center;
+.dashboard-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    background: #eff6ff;
+    width: 80px;
+    height: 80px;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    color: var(--primary-color);
 }
 
-.modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 500px;
+.dashboard-btn:hover .dashboard-icon {
+    background: var(--primary-color);
+    color: white;
+    transform: rotate(10deg) scale(1.1);
 }
 
-.close {
-    float: right;
+/* Stat Cards */
+.stat-card {
+    border: none;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+}
+
+/* Gradients for Stat Cards */
+.bg-primary { background: linear-gradient(135deg, #3b82f6, #2563eb) !important; }
+.bg-success { background: linear-gradient(135deg, #10b981, #059669) !important; }
+.bg-warning { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: white !important; }
+.bg-danger { background: linear-gradient(135deg, #ef4444, #dc2626) !important; }
+.bg-info { background: linear-gradient(135deg, #0ea5e9, #0284c7) !important; color: white !important; }
+
+.stat-card .fs-1 {
+    opacity: 0.2;
+    transform: scale(1);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stat-card:hover .fs-1 {
+    transform: scale(1.4) rotate(-15deg);
+    opacity: 0.3;
+}
+
+/* Interactive Hover Class */
+.transition-hover:hover {
+    transform: translateY(-5px);
     cursor: pointer;
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15);
+}
+
+/* Modern Tables */
+.table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    background-color: #f1f5f9;
+    color: var(--secondary-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--border-color);
+    padding: 1rem;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    color: var(--dark-text);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Badges */
+.badge {
+    padding: 0.5em 1em;
+    font-weight: 500;
+    border-radius: 50rem;
+    letter-spacing: 0.5px;
+}
+
+/* Authentication Pages */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top right, #dbeafe, #eff6ff, #ffffff);
+    padding: 20px;
+}
+
+.auth-card {
+    max-width: 450px;
+    width: 100%;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h3 {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+/* Utilities */
+.hidden { display: none !important; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Print Styling */
+@media print {
+    /* Hide Navigation and Buttons */
+    /* Also hide clickable elements styling if needed, but display none handles structure */
+    .navbar, 
+    .btn, 
+    .btn-group,
+    .no-print,
+    .alert,
+    form,
+    .d-print-none {
+        display: none !important;
+    }
+
+    /* Reset Layout */
+    body {
+        background-color: white !important;
+        color: black !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 12pt;
+    }
+    
+    .container, .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Card Styling for Print */
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .card-header {
+        background-color: white !important;
+        border-bottom: 2px solid #000 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+        color: black !important;
+        margin-top: 0 !important;
+    }
+
+    /* Table Styling */
+    .table-responsive {
+        overflow: visible !important;
+    }
+    
+    .table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .table th, 
+    .table td {
+        padding: 8px !important;
+        border: 1px solid #ddd !important;
+        color: black !important;
+    }
+    
+    .table thead th {
+        background-color: #f8f9fa !important;
+        font-weight: bold !important;
+        border-bottom: 2px solid #000 !important;
+    }
+    
+    /* Ensure Badges are legible */
+    .badge {
+        border: 1px solid #000 !important;
+        background: white !important;
+        color: black !important;
+        padding: 2px 5px !important;
+    }
+
+    /* Specific overrides for Sales/Invoice/Prescriptions */
+    .invoice-container, .prescription-container {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+    }
+    
+    /* Hide URL prints */
+    a[href]:after {
+        content: none !important;
+    }
 }

@@ -13,7 +13,7 @@ $role = 'Administrator';
 $user->email = $email;
 if($user->emailExists()) {
     echo "Default Administrator already exists. Updating password...\n";
-    $query = "UPDATE users SET password_hash = :password_hash, role = :role WHERE email = :email";
+    $query = "UPDATE users SET password_hash = :password_hash, role = :role, is_active = 1 WHERE email = :email";
     $stmt = $db->prepare($query);
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
     $stmt->bindParam(":password_hash", $password_hash);

@@ -75,4 +75,4 @@ class User {
         return $stmt->rowCount() > 0;
     }
 }
-?> 
+ 

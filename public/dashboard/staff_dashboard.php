@@ -6,45 +6,20 @@ require_once '../../app/auth.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Management System</title>
+    <title>Pharmacy Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #dff3ff;
-        }
-        .navbar {
-            background-color: #007bff;
-        }
-        .dashboard-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: black;
-            font-weight: bold;
-            padding: 20px;
-            border-radius: 10px;
-            background: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
-        }
-        .dashboard-btn:hover {
-            transform: scale(1.05);
-        }
-        .dashboard-icon {
-            font-size: 30px;
-            margin-bottom: 10px;
-        }
-    </style>
+    <link href="../styles.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="#">Pharmacy Management System</a>
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
+            </a>
             <div class="navbar-nav ms-auto">
-                <span class="text-white me-3">Logged in as: Staff (staff)</span>
-                <a class="nav-link text-white" href="/public/index.html">Logout</a>
+                <span class="text-white me-3 d-flex align-items-center">Logged in as: Staff (staff)</span>
+                <a class="nav-link text-white" href="../index.php">Logout</a>
             </div>
         </div>
     </nav>

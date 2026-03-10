@@ -24,4 +24,3 @@ function checkRole($allowedRoles) {
     }
 }
 
-?>

@@ -143,4 +143,3 @@ class Supplier {
         return $stmt;
     }
 }
-?> 
