@@ -205,13 +205,10 @@ class Inventory {
 
     // Get low stock medicines
     public function getLowStockMedicines($threshold = 10) {
-        $query = "SELECT m.*, 
-                (SELECT SUM(CASE WHEN type = 'in' THEN quantity ELSE -quantity END) 
-                FROM " . $this->table_name . " 
-                WHERE medicine_id = m.id) as current_stock
+        $query = "SELECT m.*, m.stock as current_stock
                 FROM medicines m
-                HAVING current_stock <= :threshold
-                ORDER BY current_stock ASC";
+                WHERE m.stock <= :threshold
+                ORDER BY m.stock ASC";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":threshold", $threshold, PDO::PARAM_INT);
@@ -235,8 +232,8 @@ class Inventory {
 
     // Get current stock for a medicine
     public function getCurrentStock($medicine_id) {
-        $query = "SELECT SUM(CASE WHEN type = 'in' THEN quantity ELSE -quantity END) as current_stock
-                FROM " . $this->table_name . "
+        $query = "SELECT COALESCE(SUM(quantity), 0) as current_stock
+                FROM medicine_batches
                 WHERE medicine_id = :medicine_id";
         
         $stmt = $this->conn->prepare($query);

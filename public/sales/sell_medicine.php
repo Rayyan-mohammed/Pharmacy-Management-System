@@ -1,5 +1,6 @@
 <?php
 require_once '../../app/auth.php';
+checkRole(['Administrator', 'Pharmacist', 'Staff']);
 require_once '../../app/Models/Sale.php';
 
 $database = new Database();
@@ -79,6 +80,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->commit();
             $ids_str = implode(',', $sale_ids);
             $message = "Transaction successful! Items sold: $success_count.";
+            
+            // Log sale activity
+            try {
+                $activityLog = new ActivityLog($db);
+                $activityLog->log('SALE', "Sold $success_count items. Invoice IDs: $ids_str", 'sale', $sale_ids[0] ?? null);
+            } catch (Exception $e) { /* activity_logs table may not exist yet */ }
         }
     }
 }
@@ -91,36 +98,20 @@ $medicines = $medicine->read();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sell Medicine - Pharmacy Pro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">Point of Sale</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="sales_records.php">History</a>
-                    </li>
-                </ul>
-                <div class="navbar-nav ms-auto">
-                    <a class="btn btn-light btn-sm fw-bold text-primary px-3" href="../logout.php">Logout</a>
-                </div>
-            </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container py-4">
         
         <?php if ($message): ?>
             <div class="alert alert-success d-flex align-items-center mb-4">
@@ -277,7 +268,7 @@ $medicines = $medicine->read();
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Shopping Cart State
         let cart = [];

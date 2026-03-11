@@ -85,28 +85,15 @@ if ($action == 'list') {
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="../dashboard/dashboard.php">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Logout</a>
-                    </li>
-                </ul>
-            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container py-4">
         <?php if($message): ?>
             <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show shadow-sm mb-4" role="alert">
                 <?php echo $message; ?>

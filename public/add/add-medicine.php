@@ -70,6 +70,7 @@ if($_POST) {
                 $db->commit();
                 $message = "Medicine was created successfully with Batch #$batch_number.";
                 $message_type = 'success';
+                try { $al = new ActivityLog($db); $al->log('CREATE', "Added medicine: {$medicine->name} (stock: {$medicine->stock}, batch: {$batch_number})", 'medicine', $medicine_id); } catch(Exception $e) {}
             } else {
                 throw new Exception("Unable to create initial inventory log.");
             }
@@ -93,37 +94,22 @@ if($_POST) {
     <title>Add Medicine - Pharmacy Pro</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="../styles.css" rel="stylesheet">
 </head>
 <body>
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">Add Medicine</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../inventory/inventory_report.php">Inventory</a>
-                    </li>
-                </ul>
-                <div class="navbar-nav ms-auto">
-                    <a class="btn btn-light btn-sm fw-bold text-primary px-3" href="../logout.php">Logout</a>
-                </div>
-            </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container mt-4">
+    <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="card shadow-sm">

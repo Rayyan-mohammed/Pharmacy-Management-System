@@ -35,10 +35,8 @@ $result = $stmt->fetch(PDO::FETCH_ASSOC);
 echo "Number of medicines: " . $result['count'] . "\n";
 
 // Check if any medicines have stock
-$query = "SELECT m.*, 
-          (SELECT SUM(CASE WHEN type = 'in' THEN quantity ELSE -quantity END) 
-           FROM inventory_logs 
-           WHERE medicine_id = m.id) as current_stock
+$query = "SELECT m.*, m.stock as current_stock,
+          COALESCE((SELECT SUM(mb.quantity) FROM medicine_batches mb WHERE mb.medicine_id = m.id), 0) as batch_stock
           FROM medicines m";
 $stmt = $conn->query($query);
 $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);

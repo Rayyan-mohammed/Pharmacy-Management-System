@@ -31,7 +31,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($inventory->adjustStock($medicine_id, $quantity, $type, $reason, $batch_number, $expiration_date)) {
              $message = "Stock updated successfully!";
              $message_type = 'success';
-             $_POST = []; 
+             $_POST = [];
+             try { $al = new ActivityLog($db); $al->log('UPDATE', "Stock {$type} of {$quantity} units for medicine #{$medicine_id}: {$reason}", 'medicine', $medicine_id); } catch(Exception $e) {}
         } else {
              throw new Exception("Failed to update stock. Please check logs.");
         }
@@ -58,28 +59,15 @@ $medicines = $medicines_stmt ? $medicines_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="../dashboard/dashboard.php">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Logout</a>
-                    </li>
-                </ul>
-            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-lg-6 col-md-8">
                 

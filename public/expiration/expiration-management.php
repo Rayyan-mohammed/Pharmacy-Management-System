@@ -27,29 +27,16 @@ $expired_medicines = $medicine->getExpiredMedicines();
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="../dashboard/dashboard.php">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Logout</a>
-                    </li>
-                </ul>
-            </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container py-5">
+    <div class="container py-4">
         <?php if($message): ?>
             <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
                 <?php echo $message; ?>
@@ -104,7 +91,7 @@ $expired_medicines = $medicine->getExpiredMedicines();
                                     <td class="px-4 fw-bold text-dark"><?php echo htmlspecialchars($row['name']); ?></td>
                                     <td><span class="badge bg-secondary"><?php echo htmlspecialchars($row['batch_number']); ?></span></td>
                                     <td>
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">
+                                        <span class="badge bg-danger text-white">
                                             <?php echo date('d M Y', strtotime($row['expiration_date'])); ?>
                                         </span>
                                     </td>

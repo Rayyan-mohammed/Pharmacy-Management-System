@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($user->create()) {
                 $registrationSuccess = 'User created successfully.';
+                try { $al = new ActivityLog($db); $al->log('CREATE', "Created user: {$first_name} {$last_name} ({$role})", 'user', null); } catch(Exception $e) {}
             } else {
                 $registrationError = 'Failed to create user. Please try again.';
             }
@@ -59,28 +60,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New User - Pharmacy Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../styles.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #e6f7ff;
-            padding-top: 20px;
-        }
         #register-container {
             max-width: 600px;
             margin: 0 auto;
-            margin-top: 50px;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
-                <a class="nav-link" href="../logout.php">Logout</a>
-            </div>
         </div>
     </nav>
     <div id="register-container" class="card">

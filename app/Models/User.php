@@ -25,7 +25,6 @@ class User {
 
             $stmt = $this->conn->prepare($query);
 
-            // Sanitize input
             $this->email = htmlspecialchars(strip_tags($this->email));
             $this->first_name = htmlspecialchars(strip_tags($this->first_name));
             $this->last_name = htmlspecialchars(strip_tags($this->last_name));
@@ -33,7 +32,6 @@ class User {
             $this->phone = htmlspecialchars(strip_tags($this->phone));
             $this->address = htmlspecialchars(strip_tags($this->address));
 
-            // Bind values
             $stmt->bindParam(":email", $this->email);
             $stmt->bindParam(":password_hash", $this->password_hash);
             $stmt->bindParam(":first_name", $this->first_name);
@@ -73,6 +71,98 @@ class User {
         $stmt->bindParam(":email", $this->email);
         $stmt->execute();
         return $stmt->rowCount() > 0;
+    }
+
+    // Get all users
+    public function readAll() {
+        $query = "SELECT user_id, email, first_name, last_name, role, phone, address, is_active, created_at 
+                  FROM " . $this->table_name . " ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get single user
+    public function readOne($id) {
+        $query = "SELECT user_id, email, first_name, last_name, role, phone, address, is_active, created_at 
+                  FROM " . $this->table_name . " WHERE user_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Update user details (admin)
+    public function update($id, $data) {
+        $fields = [];
+        $params = [':id' => $id];
+
+        $allowed = ['first_name', 'last_name', 'email', 'role', 'phone', 'address'];
+        foreach ($allowed as $field) {
+            if (isset($data[$field])) {
+                $fields[] = "$field = :$field";
+                $params[":$field"] = htmlspecialchars(strip_tags($data[$field]));
+            }
+        }
+        if (empty($fields)) return false;
+
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $fields) . " WHERE user_id = :id";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute($params);
+    }
+
+    // Toggle user active status
+    public function toggleActive($id) {
+        $query = "UPDATE " . $this->table_name . " SET is_active = NOT is_active WHERE user_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Change password
+    public function changePassword($id, $newPasswordHash) {
+        $query = "UPDATE " . $this->table_name . " SET password_hash = :hash WHERE user_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":hash", $newPasswordHash);
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Verify current password
+    public function verifyPassword($id, $password) {
+        $query = "SELECT password_hash FROM " . $this->table_name . " WHERE user_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row && password_verify($password, $row['password_hash']);
+    }
+
+    // Update own profile
+    public function updateProfile($id, $data) {
+        $fields = [];
+        $params = [':id' => $id];
+
+        $allowed = ['first_name', 'last_name', 'phone', 'address'];
+        foreach ($allowed as $field) {
+            if (isset($data[$field])) {
+                $fields[] = "$field = :$field";
+                $params[":$field"] = htmlspecialchars(strip_tags($data[$field]));
+            }
+        }
+        if (empty($fields)) return false;
+
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $fields) . " WHERE user_id = :id";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute($params);
+    }
+
+    // Count users by role
+    public function countByRole() {
+        $query = "SELECT role, COUNT(*) as count FROM " . $this->table_name . " GROUP BY role";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
  

@@ -46,36 +46,20 @@ foreach ($inventory_report as $item) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory - Pharmacy Pro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark mb-4 shadow-sm bg-primary">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="../add/add-medicine.php">Add Medicine</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">Inventory Report</a>
-                    </li>
-                </ul>
-                <div class="navbar-nav ms-auto">
-                     <a class="btn btn-light btn-sm fw-bold text-primary px-3" href="../logout.php">Logout</a>
-                </div>
-            </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container py-4">
         <!-- Metrics Row -->
         <div class="row g-4 mb-5">
             <div class="col-md-3">
@@ -137,7 +121,10 @@ foreach ($inventory_report as $item) {
         <div class="card shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 text-primary">Detailed Batch Inventory List</h5>
-                <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-2"></i>Print Report</button>
+                <div class="d-flex gap-2">
+                    <a href="../api/export_csv.php?type=inventory" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Export CSV</a>
+                    <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-2"></i>Print Report</button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -211,6 +198,6 @@ foreach ($inventory_report as $item) {
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

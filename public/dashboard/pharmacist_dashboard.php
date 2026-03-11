@@ -1,15 +1,9 @@
 <?php
 require_once '../../app/auth.php';
 
-// Ensure only Administrator can see this page
-if (!isset($_SESSION['currentUser']) || $_SESSION['currentUser']['role'] !== 'Administrator') {
-    if ($_SESSION['currentUser']['role'] === 'Pharmacist') {
-        header('Location: pharmacist_dashboard.php');
-    } elseif ($_SESSION['currentUser']['role'] === 'Staff') {
-        header('Location: staff_dashboard.php');
-    } else {
-        header('Location: ../index.php');
-    }
+// Ensure only Pharmacist can see this page
+if (!isset($_SESSION['currentUser']) || $_SESSION['currentUser']['role'] !== 'Pharmacist') {
+    header('Location: dashboard.php');
     exit();
 }
 
@@ -18,7 +12,7 @@ $db = $database->getConnection();
 
 $user = $_SESSION['currentUser'];
 if (!empty($user['first_name'])) {
-    $userName = $user['first_name'] . ' ' . ($user['last_name'] ?? ''); 
+    $userName = $user['first_name'] . ' ' . ($user['last_name'] ?? '');
 } else {
     $userName = $user['username'] ?? 'Guest';
 }
@@ -43,7 +37,7 @@ foreach($salesChartData as $data) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Pharmacy Pro</title>
+    <title>Pharmacist Dashboard - Pharmacy Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
@@ -67,7 +61,7 @@ foreach($salesChartData as $data) {
         <div class="card bg-primary text-white mb-4">
             <div class="card-body p-4 position-relative">
                 <h4 class="mb-1 fw-bold">Welcome back, <?php echo $userNameDisplay; ?></h4>
-                <p class="mb-0 opacity-75" style="font-size:0.875rem;">Administrator &middot; <?php echo date('l, d M Y'); ?></p>
+                <p class="mb-0 opacity-75" style="font-size:0.875rem;">Pharmacist &middot; <?php echo date('l, d M Y'); ?></p>
             </div>
         </div>
 
@@ -81,9 +75,7 @@ foreach($salesChartData as $data) {
                                 <h6 class="mb-1">Total Medicines</h6>
                                 <h2 class="mb-0"><?php echo number_format($stats['total_medicines']); ?></h2>
                             </div>
-                            <div class="fs-1" style="color:var(--primary);">
-                                <i class="bi bi-capsule"></i>
-                            </div>
+                            <div class="fs-1" style="color:var(--primary);"><i class="bi bi-capsule"></i></div>
                         </div>
                     </div>
                 </a>
@@ -96,9 +88,7 @@ foreach($salesChartData as $data) {
                                 <h6 class="mb-1">Low Stock Items</h6>
                                 <h2 class="mb-0"><?php echo number_format($stats['low_stock']); ?></h2>
                             </div>
-                            <div class="fs-1" style="color:var(--warning);">
-                                <i class="bi bi-exclamation-triangle"></i>
-                            </div>
+                            <div class="fs-1" style="color:var(--warning);"><i class="bi bi-exclamation-triangle"></i></div>
                         </div>
                     </div>
                 </a>
@@ -111,9 +101,7 @@ foreach($salesChartData as $data) {
                                 <h6 class="mb-1">Expired Medicines</h6>
                                 <h2 class="mb-0"><?php echo number_format($stats['expired']); ?></h2>
                             </div>
-                            <div class="fs-1" style="color:var(--danger);">
-                                <i class="bi bi-calendar-x"></i>
-                            </div>
+                            <div class="fs-1" style="color:var(--danger);"><i class="bi bi-calendar-x"></i></div>
                         </div>
                     </div>
                 </a>
@@ -134,13 +122,10 @@ foreach($salesChartData as $data) {
                     <div class="col-6 col-md-4 col-lg-3"><a href="../update/update-stock.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-box-seam"></i></div>Restock</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../inventory/inventory_report.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-clipboard-data"></i></div>Inventory</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../top_sales/top-selling.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-trophy"></i></div>Top Selling</a></div>
-                    <div class="col-6 col-md-4 col-lg-3"><a href="../statistics/statistics.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-bar-chart-line"></i></div>Statistics</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../supplier/supplier-management.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-truck"></i></div>Suppliers</a></div>
-                    <div class="col-6 col-md-4 col-lg-3"><a href="../users/manage_users.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-people"></i></div>Users</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../sales/returns.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-arrow-return-left"></i></div>Returns</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../add/categories.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-tags"></i></div>Categories</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../inventory/alerts.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-bell"></i></div>Alerts</a></div>
-                    <div class="col-6 col-md-4 col-lg-3"><a href="../users/activity_log.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-journal-text"></i></div>Activity Log</a></div>
                 </div>
 
                 <!-- Sales Chart -->

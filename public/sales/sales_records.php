@@ -1,5 +1,6 @@
 <?php
 require_once '../../app/auth.php';
+checkRole(['Administrator', 'Pharmacist', 'Staff']);
 
 $database = new Database();
 $db = $database->getConnection();
@@ -45,10 +46,41 @@ $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Calculate totals
 $totalRevenue = 0;
 $totalProfit = 0;
+$dailyAgg = [];
+$medicineAgg = [];
+$totalQty = 0;
+$customerSet = [];
+
 foreach ($sales as $sale) {
-    $totalRevenue += $sale['total_price'];
-    $totalProfit += $sale['total_price'] - ($sale['inventory_price'] * $sale['quantity']);
+    $revenue = (float)$sale['total_price'];
+    $profit = $revenue - ($sale['inventory_price'] * $sale['quantity']);
+    $totalRevenue += $revenue;
+    $totalProfit += $profit;
+    $totalQty += $sale['quantity'];
+
+    // Daily aggregation
+    $day = date('Y-m-d', strtotime($sale['sale_date']));
+    if (!isset($dailyAgg[$day])) $dailyAgg[$day] = ['revenue' => 0, 'profit' => 0, 'count' => 0];
+    $dailyAgg[$day]['revenue'] += $revenue;
+    $dailyAgg[$day]['profit'] += $profit;
+    $dailyAgg[$day]['count']++;
+
+    // Medicine aggregation
+    $mName = $sale['medicine_name'];
+    if (!isset($medicineAgg[$mName])) $medicineAgg[$mName] = ['revenue' => 0, 'qty' => 0];
+    $medicineAgg[$mName]['revenue'] += $revenue;
+    $medicineAgg[$mName]['qty'] += $sale['quantity'];
+
+    // Unique customers
+    if (!empty($sale['customer_name'])) $customerSet[$sale['customer_name']] = true;
 }
+
+ksort($dailyAgg);
+arsort($medicineAgg);
+$topMedByRevenue = array_slice($medicineAgg, 0, 8, true);
+$avgOrderValue = count($sales) > 0 ? $totalRevenue / count($sales) : 0;
+$uniqueCustomers = count($customerSet);
+$profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,31 +91,19 @@ foreach ($sales as $sale) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <link href="../styles.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="../dashboard/dashboard.php">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Logout</a>
-                    </li>
-                </ul>
-            </div>
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container py-4">
         <!-- Header & Stats -->
         <div class="row align-items-center mb-3">
             <div class="col">
@@ -91,6 +111,9 @@ foreach ($sales as $sale) {
                 <p class="text-secondary mb-0">Overview of transactions and revenue.</p>
             </div>
             <div class="col-auto d-flex gap-2 align-items-center">
+                <a href="../api/export_csv.php?type=sales<?php echo $startDate ? '&start_date=' . urlencode($startDate) : ''; ?><?php echo $endDate ? '&end_date=' . urlencode($endDate) : ''; ?>" class="btn btn-success">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export CSV
+                </a>
                 <button class="btn btn-outline-primary" onclick="window.print()">
                     <i class="bi bi-printer me-2"></i>Print Report
                 </button>
@@ -258,8 +281,149 @@ foreach ($sales as $sale) {
                 </div>
             </div>
         </div>
+
+        <!-- Analytics Section -->
+        <?php if (count($sales) > 0): ?>
+        <hr class="my-5">
+        <h4 class="fw-bold text-primary mb-4"><i class="bi bi-bar-chart-line me-2"></i>Sales Analytics</h4>
+
+        <!-- Extra Stats Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="card-body py-2">
+                        <i class="bi bi-cart-check text-primary fs-4"></i>
+                        <h5 class="fw-bold mb-0 mt-1"><?php echo number_format($totalQty); ?></h5>
+                        <small class="text-muted">Units Sold</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="card-body py-2">
+                        <i class="bi bi-cash text-success fs-4"></i>
+                        <h5 class="fw-bold mb-0 mt-1">₹<?php echo number_format($avgOrderValue, 2); ?></h5>
+                        <small class="text-muted">Avg Order Value</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="card-body py-2">
+                        <i class="bi bi-people text-info fs-4"></i>
+                        <h5 class="fw-bold mb-0 mt-1"><?php echo $uniqueCustomers; ?></h5>
+                        <small class="text-muted">Unique Customers</small>
+                    </div>
+                </div>
+            </div>
+            <?php if ($userRole !== 'Staff'): ?>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="card-body py-2">
+                        <i class="bi bi-percent text-warning fs-4"></i>
+                        <h5 class="fw-bold mb-0 mt-1"><?php echo round($profitMargin, 1); ?>%</h5>
+                        <small class="text-muted">Profit Margin</small>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Charts -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Daily Revenue & Profit</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="dailyChart" height="260"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-success"></i>Revenue by Medicine</h6>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="medicinePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php if (count($sales) > 0): ?>
+    <script>
+        // Daily Revenue & Profit line chart
+        new Chart(document.getElementById('dailyChart'), {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode(array_map(function($d){ return date('d M', strtotime($d)); }, array_keys($dailyAgg))); ?>,
+                datasets: [{
+                    label: 'Revenue',
+                    data: <?php echo json_encode(array_values(array_map(function($d){ return round($d['revenue'], 2); }, $dailyAgg))); ?>,
+                    borderColor: '#4e79a7',
+                    backgroundColor: 'rgba(78,121,167,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#4e79a7'
+                }<?php if ($userRole !== 'Staff'): ?>, {
+                    label: 'Profit',
+                    data: <?php echo json_encode(array_values(array_map(function($d){ return round($d['profit'], 2); }, $dailyAgg))); ?>,
+                    borderColor: '#59a14f',
+                    backgroundColor: 'rgba(89,161,79,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#59a14f'
+                }<?php endif; ?>]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ₹' + ctx.parsed.y.toLocaleString() } }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [2,4] }, ticks: { callback: v => '₹' + v.toLocaleString() } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Medicine revenue doughnut
+        const pieColors = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7'];
+        new Chart(document.getElementById('medicinePieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode(array_keys($topMedByRevenue)); ?>,
+                datasets: [{
+                    data: <?php echo json_encode(array_values(array_map(function($d){ return round($d['revenue'], 2); }, $topMedByRevenue))); ?>,
+                    backgroundColor: pieColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: ctx => ctx.label + ': ₹' + ctx.parsed.toLocaleString() } }
+                }
+            }
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html> 

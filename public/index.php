@@ -17,7 +17,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($userData) {
             $_SESSION['currentUser'] = $userData;
-            header('Location: dashboard/dashboard.php');
+            
+            // Log login activity
+            try {
+                $activityLog = new ActivityLog($db);
+                $activityLog->log('LOGIN', 'User logged in: ' . $userData['email'], 'user', $userData['user_id']);
+            } catch (Exception $e) {
+                // activity_logs table may not exist yet
+            }
+            
+            if ($userData['role'] === 'Staff') {
+                header('Location: dashboard/staff_dashboard.php');
+            } elseif ($userData['role'] === 'Pharmacist') {
+                header('Location: dashboard/pharmacist_dashboard.php');
+            } else {
+                header('Location: dashboard/dashboard.php');
+            }
             exit();
         } else {
             $loginError = 'Invalid email or password.';
@@ -35,44 +50,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Pharmacy Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
 </head>
 <body class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-header">
+            <div style="display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;background:var(--primary-50);margin-bottom:1rem;">
+                <i class="bi bi-heart-pulse-fill" style="font-size:1.5rem;color:var(--primary);"></i>
+            </div>
             <h3>Pharmacy Pro</h3>
-            <p class="text-muted">Secure Access Portal</p>
+            <p>Sign in to your account</p>
         </div>
         
-        <div class="card shadow-lg">
-            <div class="card-body p-4">
-                <h5 class="card-title text-center mb-4">Sign In</h5>
-                
+        <div class="card">
+            <div class="card-body">
                 <?php if (!empty($loginError)): ?>
-                    <div class="alert alert-danger mb-4 py-2 border-0 shadow-sm">
-                        <small>⚠️ <?php echo htmlspecialchars($loginError); ?></small>
+                    <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <span><?php echo htmlspecialchars($loginError); ?></span>
                     </div>
                 <?php endif; ?>
 
                 <form id="login-form" method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" placeholder="name@company.com" required>
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="you@pharmacy.com" required autofocus>
                     </div>
                     <div class="mb-4">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
                     </div>
-                    <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-primary btn-lg">Access Dashboard</button>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Sign in
+                            <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
                     </div>
                 </form>
             </div>
-            <div class="card-footer bg-light text-center py-3">
-                <small class="text-muted">Need help? Contact system administrator.</small>
-            </div>
         </div>
+
+        <p class="text-center mt-4" style="color:var(--text-tertiary);font-size:0.8125rem;">
+            Need access? Contact your system administrator.
+        </p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
