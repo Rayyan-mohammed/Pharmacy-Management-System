@@ -26,6 +26,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             $message = "Supplier added successfully.";
             $message_type = "success";
             $action = 'list';
+            try { $al = new ActivityLog($db); $al->log('CREATE', "Added supplier: {$_POST['name']}", 'supplier', null); } catch(Exception $e) {}
         } else {
             $message = "Unable to create supplier.";
             $message_type = "danger";
@@ -43,6 +44,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             $message = "Supplier updated successfully.";
             $message_type = "success";
             $action = 'list';
+            try { $al = new ActivityLog($db); $al->log('UPDATE', "Updated supplier #{$_POST['id']}: {$_POST['name']}", 'supplier', (int)$_POST['id']); } catch(Exception $e) {}
         } else {
             $message = "Unable to update supplier.";
             $message_type = "danger";
@@ -54,6 +56,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             $message = "Supplier deleted successfully.";
             $message_type = "success";
             $action = 'list';
+            try { $al = new ActivityLog($db); $al->log('DELETE', "Deleted supplier #{$_POST['id']}", 'supplier', (int)$_POST['id']); } catch(Exception $e) {}
         } else {
             $message = "Unable to delete supplier.";
              $message_type = "danger";

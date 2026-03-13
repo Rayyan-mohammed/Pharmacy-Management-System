@@ -30,14 +30,6 @@ class Prescription {
             $this->prescription_code = "RX-" . date("Ymd") . "-" . rand(100,999);
         }
 
-        // Sanitize input
-        $this->prescription_code = htmlspecialchars(strip_tags($this->prescription_code));
-        $this->patient_name = htmlspecialchars(strip_tags($this->patient_name));
-        $this->prescription_date = htmlspecialchars(strip_tags($this->prescription_date));
-        $this->doctor_name = htmlspecialchars(strip_tags($this->doctor_name));
-            $this->status = htmlspecialchars(strip_tags($this->status));
-        $this->notes = htmlspecialchars(strip_tags($this->notes));
-
         // Bind values
         $stmt->bindParam(":prescription_code", $this->prescription_code);
         $stmt->bindParam(":patient_name", $this->patient_name);
@@ -93,15 +85,8 @@ class Prescription {
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->patient_name = htmlspecialchars(strip_tags($this->patient_name));
-        $this->prescription_date = htmlspecialchars(strip_tags($this->prescription_date));
-        $this->doctor_name = htmlspecialchars(strip_tags($this->doctor_name));
-        $this->status = htmlspecialchars(strip_tags($this->status));
-
         // Bind values
-        $stmt->bindParam(":id", $this->id);
+        $stmt->bindParam(":id", $this->id, PDO::PARAM_INT);
         $stmt->bindParam(":patient_name", $this->patient_name);
         $stmt->bindParam(":prescription_date", $this->prescription_date);
         $stmt->bindParam(":doctor_name", $this->doctor_name);
@@ -117,8 +102,7 @@ class Prescription {
     public function delete() {
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $stmt->bindParam(1, $this->id);
+        $stmt->bindParam(1, $this->id, PDO::PARAM_INT);
 
         if($stmt->execute()) {
             return true;
@@ -135,16 +119,10 @@ class Prescription {
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $medicine_id = htmlspecialchars(strip_tags($medicine_id));
-        $quantity = htmlspecialchars(strip_tags($quantity));
-        $dosage = htmlspecialchars(strip_tags($dosage));
-        $instructions = htmlspecialchars(strip_tags($instructions));
-
         // Bind values
-        $stmt->bindParam(":prescription_id", $this->id);
-        $stmt->bindParam(":medicine_id", $medicine_id);
-        $stmt->bindParam(":quantity", $quantity);
+        $stmt->bindParam(":prescription_id", $this->id, PDO::PARAM_INT);
+        $stmt->bindParam(":medicine_id", $medicine_id, PDO::PARAM_INT);
+        $stmt->bindParam(":quantity", $quantity, PDO::PARAM_INT);
         $stmt->bindParam(":dosage", $dosage);
         $stmt->bindParam(":instructions", $instructions);
 

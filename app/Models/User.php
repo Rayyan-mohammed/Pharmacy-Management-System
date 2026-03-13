@@ -25,13 +25,6 @@ class User {
 
             $stmt = $this->conn->prepare($query);
 
-            $this->email = htmlspecialchars(strip_tags($this->email));
-            $this->first_name = htmlspecialchars(strip_tags($this->first_name));
-            $this->last_name = htmlspecialchars(strip_tags($this->last_name));
-            $this->role = htmlspecialchars(strip_tags($this->role));
-            $this->phone = htmlspecialchars(strip_tags($this->phone));
-            $this->address = htmlspecialchars(strip_tags($this->address));
-
             $stmt->bindParam(":email", $this->email);
             $stmt->bindParam(":password_hash", $this->password_hash);
             $stmt->bindParam(":first_name", $this->first_name);
@@ -101,7 +94,7 @@ class User {
         foreach ($allowed as $field) {
             if (isset($data[$field])) {
                 $fields[] = "$field = :$field";
-                $params[":$field"] = htmlspecialchars(strip_tags($data[$field]));
+                $params[":$field"] = strip_tags($data[$field]);
             }
         }
         if (empty($fields)) return false;
@@ -147,7 +140,7 @@ class User {
         foreach ($allowed as $field) {
             if (isset($data[$field])) {
                 $fields[] = "$field = :$field";
-                $params[":$field"] = htmlspecialchars(strip_tags($data[$field]));
+                $params[":$field"] = strip_tags($data[$field]);
             }
         }
         if (empty($fields)) return false;

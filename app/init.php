@@ -1,11 +1,21 @@
 <?php
-// Start session if not already started
+// Start session with secure configuration
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ]);
     session_start();
 }
 
 // Load Configuration
 require_once __DIR__ . '/Config/config.php';
+
+// Security Headers
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
 
 // Autoloader
 spl_autoload_register(function ($class_name) {

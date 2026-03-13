@@ -13,10 +13,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     
     if (!empty($email) && !empty($password)) {
-        $userData = $user->login($email, $password);
+        // Rate limiting: check failed attempts
+        $maxAttempts = 5;
+        $lockoutMinutes = 15;
+        if (!isset($_SESSION['login_attempts'])) {
+            $_SESSION['login_attempts'] = [];
+        }
+        // Clean old attempts
+        $_SESSION['login_attempts'] = array_filter($_SESSION['login_attempts'], function($t) use ($lockoutMinutes) {
+            return $t > time() - ($lockoutMinutes * 60);
+        });
         
-        if ($userData) {
-            $_SESSION['currentUser'] = $userData;
+        if (count($_SESSION['login_attempts']) >= $maxAttempts) {
+            $loginError = "Too many failed attempts. Please try again in $lockoutMinutes minutes.";
+        } else {
+            $userData = $user->login($email, $password);
+            
+            if ($userData) {
+                // Clear failed attempts on success
+                unset($_SESSION['login_attempts']);
+                
+                // Regenerate session ID to prevent session fixation
+                session_regenerate_id(true);
+                
+                $_SESSION['currentUser'] = $userData;
             
             // Log login activity
             try {
@@ -35,7 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit();
         } else {
+            // Track failed attempt
+            $_SESSION['login_attempts'][] = time();
             $loginError = 'Invalid email or password.';
+        }
         }
     } else {
         $loginError = 'Please enter both email and password.';

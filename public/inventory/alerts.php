@@ -5,12 +5,27 @@ checkRole(['Administrator', 'Pharmacist']);
 $database = new Database();
 $db = $database->getConnection();
 
-// Low stock medicines (stock <= 10)
+function medicine_column_exists($db, $column) {
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'medicines' AND COLUMN_NAME = :column");
+        $stmt->bindValue(':column', $column);
+        $stmt->execute();
+        return ((int)$stmt->fetchColumn()) > 0;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+$hasReorderLevel = medicine_column_exists($db, 'reorder_level');
+$reorderExpr = $hasReorderLevel ? 'm.reorder_level' : '10';
+
+// Low stock medicines (stock <= reorder level, fallback 10)
 $lowStockQuery = "SELECT m.id, m.name, m.stock, m.sale_price, m.inventory_price,
+                  {$reorderExpr} as reorder_level,
                   COALESCE(mc.name, 'Uncategorized') as category
                   FROM medicines m
                   LEFT JOIN medicine_categories mc ON m.category_id = mc.id
-                  WHERE m.stock <= 10
+                  WHERE m.stock <= {$reorderExpr}
                   ORDER BY m.stock ASC";
 $lowStockStmt = $db->query($lowStockQuery);
 $lowStock = $lowStockStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -55,6 +70,7 @@ try {
     // returns table may not exist yet
 }
 
+$reorderNeededCount = count($lowStock);
 $totalAlerts = count($lowStock) + count($expiring) + count($expired) + $pendingRx + $pendingReturnsCount;
 ?>
 <!DOCTYPE html>
@@ -84,6 +100,7 @@ $totalAlerts = count($lowStock) + count($expiring) + count($expired) + $pendingR
             </div>
             <div>
                 <span class="badge bg-danger fs-6"><?php echo $totalAlerts; ?> alerts</span>
+                <a href="reorder_suggestions.php" class="btn btn-sm btn-outline-primary ms-2"><i class="bi bi-arrow-repeat me-1"></i>Reorder Plan</a>
                 <a href="../api/export_csv.php?type=expiring&days=90" class="btn btn-sm btn-outline-success ms-2"><i class="bi bi-download me-1"></i>Export Expiring</a>
             </div>
         </div>
@@ -112,6 +129,12 @@ $totalAlerts = count($lowStock) + count($expiring) + count($expired) + $pendingR
                 <div class="card border-0 shadow-sm text-center py-3 <?php echo count($lowStock) ? 'border-start border-4 border-orange' : ''; ?>">
                     <h3 class="mb-0 fw-bold text-primary"><?php echo count($lowStock); ?></h3>
                     <small class="text-muted">Low Stock</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6">
+                <div class="card border-0 shadow-sm text-center py-3 <?php echo $reorderNeededCount ? 'border-start border-4 border-info' : ''; ?>">
+                    <h3 class="mb-0 fw-bold text-info"><?php echo $reorderNeededCount; ?></h3>
+                    <small class="text-muted">Reorder Needed</small>
                 </div>
             </div>
             <div class="col-md-2 col-6">
@@ -208,6 +231,7 @@ $totalAlerts = count($lowStock) + count($expiring) + count($expired) + $pendingR
                                     $stockClass = $item['stock'] == 0 ? 'bg-dark' : ($item['stock'] <= 5 ? 'bg-danger' : 'bg-warning text-dark');
                                     ?>
                                     <span class="badge <?php echo $stockClass; ?>"><?php echo $item['stock'] == 0 ? 'OUT' : $item['stock']; ?></span>
+                                    <div><small class="text-muted">Target: <?php echo (int)$item['reorder_level']; ?></small></div>
                                 </td>
                                 <td class="text-end">₹<?php echo number_format($item['inventory_price'], 2); ?></td>
                                 <td class="text-end px-4">₹<?php echo number_format($item['sale_price'], 2); ?></td>

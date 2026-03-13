@@ -10,41 +10,177 @@ class Sale {
     public $total_price;
     public $profit;
     public $customer_name;
+    public $customer_id;
+    public $invoice_number;
+    public $discount;
+    public $subtotal;
+    public $discount_type;
+    public $discount_value;
+    public $discount_amount;
+    public $taxable_amount;
+    public $tax_percent;
+    public $tax_amount;
+    public $cgst_amount;
+    public $sgst_amount;
+    public $igst_amount;
+    public $net_total;
+    public $customer_phone;
+    public $payment_method;
+    public $payment_reference;
+    public $upi_txn_id;
+    public $card_last4;
+    public $card_auth_ref;
+    public $amount_tendered;
+    public $change_due;
+    public $branch_id;
     public $sale_date;
+
+    private $columnExistsCache = [];
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
+    private function hasColumn($columnName) {
+        if (!array_key_exists($columnName, $this->columnExistsCache)) {
+            try {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sales' AND COLUMN_NAME = :column");
+                $stmt->bindValue(':column', $columnName);
+                $stmt->execute();
+                $this->columnExistsCache[$columnName] = ((int)$stmt->fetchColumn()) > 0;
+            } catch (Exception $e) {
+                $this->columnExistsCache[$columnName] = false;
+            }
+        }
+        return $this->columnExistsCache[$columnName];
+    }
+
     // Create new sale
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . "
-                (medicine_id, quantity, unit_price, total_price, profit, customer_name)
-                VALUES
-                (:medicine_id, :quantity, :unit_price, :total_price, :profit, :customer_name)";
+        $columns = ['medicine_id', 'quantity', 'unit_price', 'total_price', 'profit', 'customer_name'];
+        $placeholders = [':medicine_id', ':quantity', ':unit_price', ':total_price', ':profit', ':customer_name'];
 
+        $optionalColumns = [
+            'customer_id', 'invoice_number', 'discount',
+            'subtotal', 'discount_type', 'discount_value', 'discount_amount',
+            'taxable_amount', 'tax_percent', 'tax_amount', 'cgst_amount', 'sgst_amount', 'igst_amount', 'net_total',
+            'customer_phone', 'payment_method', 'payment_reference', 'upi_txn_id',
+            'card_last4', 'card_auth_ref', 'amount_tendered', 'change_due', 'branch_id'
+        ];
+
+        foreach ($optionalColumns as $col) {
+            if ($this->hasColumn($col)) {
+                $columns[] = $col;
+                $placeholders[] = ':' . $col;
+            }
+        }
+
+        $query = "INSERT INTO {$this->table_name} (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->medicine_id = htmlspecialchars(strip_tags($this->medicine_id));
-        $this->quantity = htmlspecialchars(strip_tags($this->quantity));
-        $this->unit_price = htmlspecialchars(strip_tags($this->unit_price));
-        $this->total_price = htmlspecialchars(strip_tags($this->total_price));
-        $this->profit = htmlspecialchars(strip_tags($this->profit));
-        $this->customer_name = htmlspecialchars(strip_tags($this->customer_name));
-
-        // Bind values
-        $stmt->bindParam(":medicine_id", $this->medicine_id);
-        $stmt->bindParam(":quantity", $this->quantity);
+        $stmt->bindParam(":medicine_id", $this->medicine_id, PDO::PARAM_INT);
+        $stmt->bindParam(":quantity", $this->quantity, PDO::PARAM_INT);
         $stmt->bindParam(":unit_price", $this->unit_price);
         $stmt->bindParam(":total_price", $this->total_price);
         $stmt->bindParam(":profit", $this->profit);
         $stmt->bindParam(":customer_name", $this->customer_name);
 
+        if ($this->hasColumn('customer_id')) {
+            $customerId = !empty($this->customer_id) ? (int)$this->customer_id : null;
+            $stmt->bindValue(':customer_id', $customerId, $customerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        }
+        if ($this->hasColumn('invoice_number')) {
+            $stmt->bindValue(':invoice_number', $this->invoice_number ?: null);
+        }
+        if ($this->hasColumn('discount')) {
+            $stmt->bindValue(':discount', (float)($this->discount ?? 0));
+        }
+        if ($this->hasColumn('subtotal')) {
+            $stmt->bindValue(':subtotal', (float)($this->subtotal ?? $this->total_price));
+        }
+        if ($this->hasColumn('discount_type')) {
+            $stmt->bindValue(':discount_type', $this->discount_type ?: 'amount');
+        }
+        if ($this->hasColumn('discount_value')) {
+            $stmt->bindValue(':discount_value', (float)($this->discount_value ?? 0));
+        }
+        if ($this->hasColumn('discount_amount')) {
+            $stmt->bindValue(':discount_amount', (float)($this->discount_amount ?? 0));
+        }
+        if ($this->hasColumn('taxable_amount')) {
+            $stmt->bindValue(':taxable_amount', (float)($this->taxable_amount ?? $this->total_price));
+        }
+        if ($this->hasColumn('tax_percent')) {
+            $stmt->bindValue(':tax_percent', (float)($this->tax_percent ?? 0));
+        }
+        if ($this->hasColumn('tax_amount')) {
+            $stmt->bindValue(':tax_amount', (float)($this->tax_amount ?? 0));
+        }
+        if ($this->hasColumn('cgst_amount')) {
+            $stmt->bindValue(':cgst_amount', (float)($this->cgst_amount ?? 0));
+        }
+        if ($this->hasColumn('sgst_amount')) {
+            $stmt->bindValue(':sgst_amount', (float)($this->sgst_amount ?? 0));
+        }
+        if ($this->hasColumn('igst_amount')) {
+            $stmt->bindValue(':igst_amount', (float)($this->igst_amount ?? 0));
+        }
+        if ($this->hasColumn('net_total')) {
+            $stmt->bindValue(':net_total', (float)($this->net_total ?? $this->total_price));
+        }
+        if ($this->hasColumn('customer_phone')) {
+            $stmt->bindValue(':customer_phone', $this->customer_phone ?: null);
+        }
+        if ($this->hasColumn('payment_method')) {
+            $stmt->bindValue(':payment_method', $this->payment_method ?: 'Cash');
+        }
+        if ($this->hasColumn('payment_reference')) {
+            $stmt->bindValue(':payment_reference', $this->payment_reference ?: null);
+        }
+        if ($this->hasColumn('upi_txn_id')) {
+            $stmt->bindValue(':upi_txn_id', $this->upi_txn_id ?: null);
+        }
+        if ($this->hasColumn('card_last4')) {
+            $stmt->bindValue(':card_last4', $this->card_last4 ?: null);
+        }
+        if ($this->hasColumn('card_auth_ref')) {
+            $stmt->bindValue(':card_auth_ref', $this->card_auth_ref ?: null);
+        }
+        if ($this->hasColumn('amount_tendered')) {
+            $stmt->bindValue(':amount_tendered', (float)($this->amount_tendered ?? 0));
+        }
+        if ($this->hasColumn('change_due')) {
+            $stmt->bindValue(':change_due', (float)($this->change_due ?? 0));
+        }
+        if ($this->hasColumn('branch_id')) {
+            $stmt->bindValue(':branch_id', (int)($this->branch_id ?? 1), PDO::PARAM_INT);
+        }
+
         if($stmt->execute()) {
             return true;
         }
         return false;
+    }
+
+    // Generate unique invoice number
+    public function generateInvoiceNumber() {
+        $prefix = 'INV-' . date('Ymd') . '-';
+        if (!$this->hasColumn('invoice_number')) {
+            return $prefix . '0001';
+        }
+        $query = "SELECT invoice_number FROM {$this->table_name} 
+                  WHERE invoice_number LIKE :prefix 
+                  ORDER BY id DESC LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $like = $prefix . '%';
+        $stmt->bindParam(':prefix', $like);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && $row['invoice_number']) {
+            $lastNum = (int)substr($row['invoice_number'], strlen($prefix));
+            return $prefix . str_pad($lastNum + 1, 4, '0', STR_PAD_LEFT);
+        }
+        return $prefix . '0001';
     }
 
     // Read all sales
@@ -139,7 +275,7 @@ class Sale {
                          MAX(s.sale_date) as last_sold
                   FROM {$this->table_name} s
                   JOIN medicines m ON s.medicine_id = m.id
-                  GROUP BY m.id, m.name, m.selling_price, m.inventory_price
+                  GROUP BY m.id, m.name, m.sale_price, m.inventory_price
                   ORDER BY total_quantity DESC
                   LIMIT :limit";
         $stmt = $this->conn->prepare($query);

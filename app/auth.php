@@ -24,3 +24,38 @@ function checkRole($allowedRoles) {
     }
 }
 
+function getCurrentBranchId() {
+    return (int)($_SESSION['currentUser']['branch_id'] ?? 1);
+}
+
+function hasPermission($permissionKey) {
+    if (!isset($_SESSION['currentUser']['role'])) {
+        return false;
+    }
+
+    $role = $_SESSION['currentUser']['role'];
+    if ($role === 'Administrator') {
+        return true;
+    }
+
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+        $stmt = $db->prepare("SELECT is_allowed FROM role_permissions WHERE role_name = :role AND permission_key = :perm LIMIT 1");
+        $stmt->bindValue(':role', $role);
+        $stmt->bindValue(':perm', $permissionKey);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? ((int)$row['is_allowed'] === 1) : false;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function checkPermission($permissionKey) {
+    if (!hasPermission($permissionKey)) {
+        header('Location: ' . BASE_URL . '/dashboard/dashboard.php');
+        exit();
+    }
+}
+

@@ -23,13 +23,6 @@ class Supplier {
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->name = htmlspecialchars(strip_tags($this->name));
-        $this->contact_person = htmlspecialchars(strip_tags($this->contact_person));
-        $this->email = htmlspecialchars(strip_tags($this->email));
-        $this->phone = htmlspecialchars(strip_tags($this->phone));
-        $this->address = htmlspecialchars(strip_tags($this->address));
-
         // Bind values
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":contact_person", $this->contact_person);
@@ -84,16 +77,8 @@ class Supplier {
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->name = htmlspecialchars(strip_tags($this->name));
-        $this->contact_person = htmlspecialchars(strip_tags($this->contact_person));
-        $this->email = htmlspecialchars(strip_tags($this->email));
-        $this->phone = htmlspecialchars(strip_tags($this->phone));
-        $this->address = htmlspecialchars(strip_tags($this->address));
-
         // Bind values
-        $stmt->bindParam(":id", $this->id);
+        $stmt->bindParam(":id", $this->id, PDO::PARAM_INT);
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":contact_person", $this->contact_person);
         $stmt->bindParam(":email", $this->email);
@@ -110,8 +95,7 @@ class Supplier {
     public function delete() {
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $stmt->bindParam(1, $this->id);
+        $stmt->bindParam(1, $this->id, PDO::PARAM_INT);
 
         if($stmt->execute()) {
             return true;

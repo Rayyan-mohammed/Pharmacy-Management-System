@@ -10,6 +10,7 @@ class Medicine {
     public $inventory_price;
     public $sale_price;
     public $stock;
+    public $reorder_level;
     public $prescription_needed;
     public $expiration_date;
 
@@ -20,29 +21,23 @@ class Medicine {
     // Create new medicine
     public function create() {
         $query = "INSERT INTO " . $this->table_name . "
-                (name, category_id, description, inventory_price, sale_price, stock, prescription_needed, expiration_date)
+            (name, category_id, description, inventory_price, sale_price, stock, reorder_level, prescription_needed, expiration_date)
                 VALUES
-                (:name, :category_id, :description, :inventory_price, :sale_price, :stock, :prescription_needed, :expiration_date)";
+            (:name, :category_id, :description, :inventory_price, :sale_price, :stock, :reorder_level, :prescription_needed, :expiration_date)";
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->name = htmlspecialchars(strip_tags($this->name));
-        $this->category_id = !empty($this->category_id) ? htmlspecialchars(strip_tags($this->category_id)) : null;
-        $this->description = htmlspecialchars(strip_tags($this->description));
-        $this->inventory_price = htmlspecialchars(strip_tags($this->inventory_price));
-        $this->sale_price = htmlspecialchars(strip_tags($this->sale_price));
-        $this->stock = htmlspecialchars(strip_tags($this->stock));
-        $this->prescription_needed = htmlspecialchars(strip_tags($this->prescription_needed));
-        $this->expiration_date = htmlspecialchars(strip_tags($this->expiration_date));
-
         // Bind values
+        $this->category_id = !empty($this->category_id) ? (int)$this->category_id : null;
+
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":category_id", $this->category_id);
         $stmt->bindParam(":description", $this->description);
         $stmt->bindParam(":inventory_price", $this->inventory_price);
         $stmt->bindParam(":sale_price", $this->sale_price);
         $stmt->bindParam(":stock", $this->stock);
+        $reorderLevel = !empty($this->reorder_level) ? (int)$this->reorder_level : 10;
+        $stmt->bindParam(":reorder_level", $reorderLevel, PDO::PARAM_INT);
         $stmt->bindParam(":prescription_needed", $this->prescription_needed);
         $stmt->bindParam(":expiration_date", $this->expiration_date);
 
@@ -58,10 +53,6 @@ class Medicine {
         $query = "INSERT INTO medicine_batches (medicine_id, batch_number, quantity, expiration_date) 
                   VALUES (:medicine_id, :batch_number, :quantity, :expiration_date)";
         $stmt = $this->conn->prepare($query);
-        
-        $batch_number = htmlspecialchars(strip_tags($batch_number));
-        $quantity = htmlspecialchars(strip_tags($quantity));
-        $expiration_date = htmlspecialchars(strip_tags($expiration_date));
 
         $stmt->bindParam(":medicine_id", $this->id);
         $stmt->bindParam(":batch_number", $batch_number);
@@ -178,20 +169,19 @@ class Medicine {
                   GROUP BY m.id
                   LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
-        $this->id = htmlspecialchars(strip_tags($this->id));
         $stmt->bindParam(1, $this->id);
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if($row) {
             $this->name = $row['name'];
+            $this->category_id = $row['category_id'] ?? null;
+            $this->description = $row['description'] ?? '';
             $this->inventory_price = $row['inventory_price'];
             $this->sale_price = $row['sale_price'];
-            $this->stock = $row['current_stock']; // Use aggregated stock
+            $this->stock = $row['current_stock'];
+            $this->reorder_level = $row['reorder_level'] ?? 10;
             $this->prescription_needed = $row['prescription_needed'];
-            // Expiration date from medicine table is likely not useful here if we have batches
-            // But for compatibility let's keep it or pick the nearest batch expiry?
-            // For now, keep it as is from DB (null or whatever)
             $this->expiration_date = $row['expiration_date']; 
             return true;
         }
@@ -203,33 +193,28 @@ class Medicine {
         $query = "UPDATE " . $this->table_name . "
                 SET
                     name = :name,
+                    category_id = :category_id,
+                    description = :description,
                     inventory_price = :inventory_price,
                     sale_price = :sale_price,
-                    stock = :stock,
-                    prescription_needed = :prescription_needed,
-                    expiration_date = :expiration_date
+                    reorder_level = :reorder_level,
+                    prescription_needed = :prescription_needed
                 WHERE
                     id = :id";
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->name = htmlspecialchars(strip_tags($this->name));
-        $this->inventory_price = htmlspecialchars(strip_tags($this->inventory_price));
-        $this->sale_price = htmlspecialchars(strip_tags($this->sale_price));
-        $this->stock = htmlspecialchars(strip_tags($this->stock));
-        $this->prescription_needed = htmlspecialchars(strip_tags($this->prescription_needed));
-        $this->expiration_date = htmlspecialchars(strip_tags($this->expiration_date));
+        $catId = !empty($this->category_id) ? (int)$this->category_id : null;
 
-        // Bind values
-        $stmt->bindParam(":id", $this->id);
+        $stmt->bindParam(":id", $this->id, PDO::PARAM_INT);
         $stmt->bindParam(":name", $this->name);
+        $stmt->bindParam(":category_id", $catId);
+        $stmt->bindParam(":description", $this->description);
         $stmt->bindParam(":inventory_price", $this->inventory_price);
         $stmt->bindParam(":sale_price", $this->sale_price);
-        $stmt->bindParam(":stock", $this->stock);
+        $reorderLevel = !empty($this->reorder_level) ? (int)$this->reorder_level : 10;
+        $stmt->bindParam(":reorder_level", $reorderLevel, PDO::PARAM_INT);
         $stmt->bindParam(":prescription_needed", $this->prescription_needed);
-        $stmt->bindParam(":expiration_date", $this->expiration_date);
 
         if($stmt->execute()) {
             return true;
@@ -241,8 +226,7 @@ class Medicine {
     public function delete() {
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $stmt->bindParam(1, $this->id);
+        $stmt->bindParam(1, $this->id, PDO::PARAM_INT);
 
         if($stmt->execute()) {
             return true;

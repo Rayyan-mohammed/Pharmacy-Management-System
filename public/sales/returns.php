@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $unitPrice = $sale['unit_price'] ?? ($sale['total_price'] / $sale['quantity']);
                     $refundAmount = $unitPrice * $quantity;
-                    if ($returns->create($saleId, $sale['medicine_id'], $quantity, $reason, $refundAmount)) {
+                    $originalPaymentMethod = $sale['payment_method'] ?? 'Cash';
+                    if ($returns->create($saleId, $sale['medicine_id'], $quantity, $reason, $refundAmount, $originalPaymentMethod)) {
                         $message = 'Return request created successfully.';
                         $messageType = 'success';
                         try { $al = new ActivityLog($db); $al->log('RETURN', "Created return for sale #{$saleId}: {$quantity} units, refund ₹{$refundAmount}", 'sale', $saleId); } catch(Exception $e) {}
@@ -50,7 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'approve') {
         $returnId = (int)$_POST['return_id'];
-        if ($returns->approve($returnId, $processedBy)) {
+        $refundMethod = $_POST['refund_method'] ?? '';
+        $refundReference = trim($_POST['refund_reference'] ?? '');
+        if ($returns->approve($returnId, $processedBy, $refundMethod, $refundReference)) {
             $message = 'Return approved. Stock has been restored.';
             $messageType = 'success';
             try { $al = new ActivityLog($db); $al->log('RETURN', "Approved return #{$returnId}", 'return', $returnId); } catch(Exception $e) {}
@@ -169,6 +172,7 @@ $stats = $returns->getStats();
                                 <th class="py-3">Customer</th>
                                 <th class="py-3 text-center">Qty</th>
                                 <th class="py-3 text-end">Refund</th>
+                                <th class="py-3">Payment Trail</th>
                                 <th class="py-3">Reason</th>
                                 <th class="py-3 text-center">Status</th>
                                 <th class="py-3 text-end px-4">Actions</th>
@@ -176,7 +180,7 @@ $stats = $returns->getStats();
                         </thead>
                         <tbody>
                             <?php if (empty($allReturns)): ?>
-                                <tr><td colspan="9" class="text-center text-muted py-5">No returns found.</td></tr>
+                                <tr><td colspan="10" class="text-center text-muted py-5">No returns found.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($allReturns as $r): ?>
                                 <tr>
@@ -189,6 +193,15 @@ $stats = $returns->getStats();
                                     <td><?php echo htmlspecialchars($r['customer_name'] ?? '-'); ?></td>
                                     <td class="text-center"><span class="badge bg-light text-dark border"><?php echo $r['quantity']; ?></span></td>
                                     <td class="text-end fw-bold">₹<?php echo number_format($r['refund_amount'], 2); ?></td>
+                                    <td>
+                                        <small class="d-block">Original: <?php echo htmlspecialchars($r['original_payment_method'] ?: ($r['sale_payment_method'] ?? 'Cash')); ?></small>
+                                        <?php if (!empty($r['refund_method'])): ?>
+                                            <small class="d-block text-success">Refunded via: <?php echo htmlspecialchars($r['refund_method']); ?></small>
+                                        <?php endif; ?>
+                                        <?php if (!empty($r['refund_reference'])): ?>
+                                            <small class="d-block text-muted">Ref: <?php echo htmlspecialchars($r['refund_reference']); ?></small>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><small><?php echo htmlspecialchars(mb_strimwidth($r['reason'], 0, 40, '...')); ?></small></td>
                                     <td class="text-center">
                                         <?php
@@ -198,10 +211,16 @@ $stats = $returns->getStats();
                                     </td>
                                     <td class="text-end px-4">
                                         <?php if ($r['status'] === 'pending'): ?>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Approve this return and restock?')">
+                                            <form method="POST" class="d-inline-flex align-items-center gap-1" onsubmit="return confirm('Approve this return and restock?')">
                                                 <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                                 <input type="hidden" name="action" value="approve">
                                                 <input type="hidden" name="return_id" value="<?php echo $r['id']; ?>">
+                                                <select name="refund_method" class="form-select form-select-sm" style="width:90px;">
+                                                    <option value="Cash" <?php echo ($r['original_payment_method'] ?? '') === 'Cash' ? 'selected' : ''; ?>>Cash</option>
+                                                    <option value="Card" <?php echo ($r['original_payment_method'] ?? '') === 'Card' ? 'selected' : ''; ?>>Card</option>
+                                                    <option value="UPI" <?php echo ($r['original_payment_method'] ?? '') === 'UPI' ? 'selected' : ''; ?>>UPI</option>
+                                                </select>
+                                                <input type="text" name="refund_reference" class="form-control form-control-sm" style="width:110px;" placeholder="Ref (opt)">
                                                 <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i></button>
                                             </form>
                                             <form method="POST" class="d-inline" onsubmit="return confirm('Reject this return?')">

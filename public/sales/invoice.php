@@ -9,33 +9,85 @@ $database = new Database();
 $db = $database->getConnection();
 $saleModel = new Sale($db);
 
-$sale_ids_str = $_GET['ids'] ?? ($_GET['id'] ?? 0);
+// Support both ?invoice=INV-xxx and legacy ?ids=1,2,3 / ?id=1
+$invoice_param = $_GET['invoice'] ?? '';
+$sale_ids_str = $_GET['ids'] ?? ($_GET['id'] ?? '');
 
-if (!$sale_ids_str) {
+if ($invoice_param) {
+    // Lookup by invoice number — only if column exists
+    try {
+        $query = "SELECT s.*, m.name as medicine_name, m.description,
+                  (SELECT mb.batch_number FROM medicine_batches mb 
+                   WHERE mb.medicine_id = s.medicine_id 
+                   ORDER BY mb.expiration_date ASC LIMIT 1) as batch_number,
+                  (SELECT mb.expiration_date FROM medicine_batches mb 
+                   WHERE mb.medicine_id = s.medicine_id 
+                   ORDER BY mb.expiration_date ASC LIMIT 1) as batch_expiry
+                  FROM sales s
+                  JOIN medicines m ON s.medicine_id = m.id
+                  WHERE s.invoice_number = :inv
+                  ORDER BY s.id ASC";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':inv', $invoice_param);
+        $stmt->execute();
+        $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // invoice_number column doesn't exist yet — fall back to empty
+        $sales = [];
+    }
+    $invoice_number = $invoice_param;
+
+    // Fallback to legacy ID lookup when invoice lookup fails but IDs are provided
+    if ((!$sales || count($sales) === 0) && $sale_ids_str) {
+        $sale_ids = array_filter(array_map('intval', explode(',', $sale_ids_str)));
+        if (!empty($sale_ids)) {
+            $in = str_repeat('?,', count($sale_ids) - 1) . '?';
+            $query = "SELECT s.*, m.name as medicine_name, m.description,
+                      (SELECT mb.batch_number FROM medicine_batches mb 
+                       WHERE mb.medicine_id = s.medicine_id 
+                       ORDER BY mb.expiration_date ASC LIMIT 1) as batch_number,
+                      (SELECT mb.expiration_date FROM medicine_batches mb 
+                       WHERE mb.medicine_id = s.medicine_id 
+                       ORDER BY mb.expiration_date ASC LIMIT 1) as batch_expiry
+                      FROM sales s
+                      JOIN medicines m ON s.medicine_id = m.id
+                      WHERE s.id IN ($in)";
+            $stmt = $db->prepare($query);
+            $stmt->execute($sale_ids);
+            $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!empty($sales[0]['invoice_number'])) {
+                $invoice_number = $sales[0]['invoice_number'];
+            } else {
+                $invoice_number = 'INV-' . str_pad($sales[0]['id'], 6, '0', STR_PAD_LEFT);
+            }
+        }
+    }
+} elseif ($sale_ids_str) {
+    $sale_ids = array_map('intval', explode(',', $sale_ids_str));
+    if (empty($sale_ids)) die("No valid IDs");
+
+    $in = str_repeat('?,', count($sale_ids) - 1) . '?';
+    $query = "SELECT s.*, m.name as medicine_name, m.description,
+              (SELECT mb.batch_number FROM medicine_batches mb 
+               WHERE mb.medicine_id = s.medicine_id 
+               ORDER BY mb.expiration_date ASC LIMIT 1) as batch_number,
+              (SELECT mb.expiration_date FROM medicine_batches mb 
+               WHERE mb.medicine_id = s.medicine_id 
+               ORDER BY mb.expiration_date ASC LIMIT 1) as batch_expiry
+              FROM sales s
+              JOIN medicines m ON s.medicine_id = m.id
+              WHERE s.id IN ($in)";
+    $stmt = $db->prepare($query);
+    $stmt->execute($sale_ids);
+    $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Use stored invoice_number if available, else generate from ID
+    $invoice_number = !empty($sales[0]['invoice_number']) ? $sales[0]['invoice_number'] : 'INV-' . str_pad($sales[0]['id'], 6, '0', STR_PAD_LEFT);
+} else {
     die("Invalid Sale ID(s)");
 }
 
-$sale_ids = array_map('intval', explode(',', $sale_ids_str));
-if (empty($sale_ids)) die("No valid IDs");
-
-// Fetch sales with medicine info and batch number (FIFO: earliest expiring batch)
-$in  = str_repeat('?,', count($sale_ids) - 1) . '?';
-$query = "SELECT s.*, m.name as medicine_name, m.description,
-          (SELECT mb.batch_number FROM medicine_batches mb 
-           WHERE mb.medicine_id = s.medicine_id 
-           ORDER BY mb.expiration_date ASC LIMIT 1) as batch_number,
-          (SELECT mb.expiration_date FROM medicine_batches mb 
-           WHERE mb.medicine_id = s.medicine_id 
-           ORDER BY mb.expiration_date ASC LIMIT 1) as batch_expiry
-          FROM sales s
-          JOIN medicines m ON s.medicine_id = m.id
-          WHERE s.id IN ($in)";
-$stmt = $db->prepare($query);
-$stmt->execute($sale_ids);
-$sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 if (!$sales) {
-    die("Sales not found");
+    die("Sales not found. If you used an invoice number, the database may need migration — run /database/setup/migrate.php first.");
 }
 
 $first_sale = $sales[0];
@@ -46,9 +98,26 @@ foreach ($sales as $s) {
     $total_items += $s['quantity'];
 }
 
-// Generate invoice number from sale IDs
-$invoice_number = 'INV-' . str_pad($first_sale['id'], 6, '0', STR_PAD_LEFT);
+$subtotal_amount = isset($first_sale['subtotal']) ? (float)$first_sale['subtotal'] : $grand_total;
+$discount_amount = isset($first_sale['discount_amount']) ? (float)$first_sale['discount_amount'] : (isset($first_sale['discount']) ? (float)$first_sale['discount'] : 0);
+$taxable_amount = isset($first_sale['taxable_amount']) ? (float)$first_sale['taxable_amount'] : max(0, $subtotal_amount - $discount_amount);
+$tax_percent = isset($first_sale['tax_percent']) ? (float)$first_sale['tax_percent'] : 0;
+$tax_amount = isset($first_sale['tax_amount']) ? (float)$first_sale['tax_amount'] : 0;
+$net_total = isset($first_sale['net_total']) ? (float)$first_sale['net_total'] : ($taxable_amount + $tax_amount);
+
 $invoice_date = date('d M Y, h:i A', strtotime($first_sale['sale_date']));
+$ref_number = $invoice_number;
+$customer_phone = trim((string)($first_sale['customer_phone'] ?? ''));
+$payment_method = trim((string)($first_sale['payment_method'] ?? ''));
+if ($payment_method === '') {
+    $payment_method = 'Cash';
+}
+$amount_tendered = isset($first_sale['amount_tendered']) ? (float)$first_sale['amount_tendered'] : $grand_total;
+$change_due = isset($first_sale['change_due']) ? (float)$first_sale['change_due'] : 0;
+$payment_reference = trim((string)($first_sale['payment_reference'] ?? ''));
+$upi_txn_id = trim((string)($first_sale['upi_txn_id'] ?? ''));
+$card_last4 = trim((string)($first_sale['card_last4'] ?? ''));
+$card_auth_ref = trim((string)($first_sale['card_auth_ref'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -281,6 +350,7 @@ $invoice_date = date('d M Y, h:i A', strtotime($first_sale['sale_date']));
             <div class="info-card">
                 <div class="info-label"><i class="bi bi-person"></i> Billed To</div>
                 <div class="info-value"><?php echo htmlspecialchars($first_sale['customer_name']); ?></div>
+                <div class="info-sub"><?php echo $customer_phone !== '' ? htmlspecialchars($customer_phone) : 'No mobile provided'; ?></div>
             </div>
             <div class="info-card">
                 <div class="info-label"><i class="bi bi-calendar3"></i> Date</div>
@@ -333,15 +403,19 @@ $invoice_date = date('d M Y, h:i A', strtotime($first_sale['sale_date']));
             <div class="totals-box">
                 <div class="totals-row sub">
                     <span>Subtotal</span>
-                    <span><?php echo number_format($grand_total, 2); ?></span>
+                    <span><?php echo number_format($subtotal_amount, 2); ?></span>
                 </div>
                 <div class="totals-row sub">
-                    <span>Tax</span>
-                    <span>0.00</span>
+                    <span>Discount</span>
+                    <span>-<?php echo number_format($discount_amount, 2); ?></span>
+                </div>
+                <div class="totals-row sub">
+                    <span>Tax (<?php echo number_format($tax_percent, 2); ?>%)</span>
+                    <span><?php echo number_format($tax_amount, 2); ?></span>
                 </div>
                 <div class="totals-row grand">
                     <span>Grand Total</span>
-                    <span><?php echo number_format($grand_total, 2); ?></span>
+                    <span><?php echo number_format($net_total, 2); ?></span>
                 </div>
             </div>
         </div>
@@ -354,8 +428,15 @@ $invoice_date = date('d M Y, h:i A', strtotime($first_sale['sale_date']));
             We wish you a speedy recovery. Get well soon!
         </div>
         <div class="footer-note" style="text-align:right;">
-            <strong>Payment:</strong> Completed<br>
-            Ref: <?php echo htmlspecialchars($sale_ids_str); ?>
+            <strong>Payment:</strong> <?php echo htmlspecialchars($payment_method); ?><br>
+            <?php if ($payment_method === 'Cash'): ?>
+                Received: <?php echo number_format($amount_tendered, 2); ?> | Change: <?php echo number_format($change_due, 2); ?><br>
+            <?php endif; ?>
+            <?php if ($payment_reference !== ''): ?>Ref: <?php echo htmlspecialchars($payment_reference); ?><br><?php endif; ?>
+            <?php if ($upi_txn_id !== ''): ?>UPI Txn: <?php echo htmlspecialchars($upi_txn_id); ?><br><?php endif; ?>
+            <?php if ($card_last4 !== ''): ?>Card: ****<?php echo htmlspecialchars($card_last4); ?><br><?php endif; ?>
+            <?php if ($card_auth_ref !== ''): ?>Auth: <?php echo htmlspecialchars($card_auth_ref); ?><br><?php endif; ?>
+            Ref: <?php echo htmlspecialchars($ref_number); ?>
         </div>
     </div>
 

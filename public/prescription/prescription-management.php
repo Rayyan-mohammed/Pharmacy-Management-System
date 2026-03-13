@@ -13,6 +13,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
 // Handle form submissions
 if($_POST) {
+    verify_csrf_token();
     if(isset($_POST['add_prescription'])) {
         // Set prescription property values
         $prescription->patient_name = $_POST['patient_name'];
@@ -37,6 +38,7 @@ if($_POST) {
             }
             $message = "Prescription was created successfully.";
             $action = 'list';
+            try { $al = new ActivityLog($db); $al->log('CREATE', "Created prescription for {$_POST['patient_name']} (Dr. {$_POST['doctor_name']})", 'prescription', $prescription_id); } catch(Exception $e) {}
         } else {
             $message = "Unable to create prescription.";
         }
@@ -53,6 +55,7 @@ if($_POST) {
         if($prescription->updateStatus($status, $changedBy)) {
             $message = "Prescription status was updated to " . ucfirst($status) . ".";
             $action = 'list';
+            try { $al = new ActivityLog($db); $al->log('UPDATE', "Prescription #{$_POST['id']} status changed to {$status}", 'prescription', (int)$_POST['id']); } catch(Exception $e) {}
         } else {
             $message = "Unable to update prescription status.";
         }
@@ -62,6 +65,7 @@ if($_POST) {
         if($prescription->delete()) {
             $message = "Prescription was deleted successfully.";
             $action = 'list';
+            try { $al = new ActivityLog($db); $al->log('DELETE', "Deleted prescription #{$_POST['id']}", 'prescription', (int)$_POST['id']); } catch(Exception $e) {}
         } else {
             $message = "Unable to delete prescription.";
         }
@@ -162,16 +166,19 @@ $medicines_list = $medicine->read();
                                                 <a href="?action=view&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-info" title="View Details"><i class="bi bi-eye"></i></a>
                                                 <?php if($status == 'pending'): ?>
                                                     <form method="POST" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                         <input type="hidden" name="status" value="filled">
                                                         <button type="submit" name="update_status" class="btn btn-sm btn-outline-success" title="Mark Filled"><i class="bi bi-check-lg"></i></button>
                                                     </form>
                                                     <form method="POST" class="d-inline" onsubmit="return confirm('Reject this prescription?');">
+                                                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                         <input type="hidden" name="status" value="rejected">
                                                         <button type="submit" name="update_status" class="btn btn-sm btn-outline-warning" title="Mark Rejected"><i class="bi bi-x-lg"></i></button>
                                                     </form>
                                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                         <button type="submit" name="delete_prescription" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
                                                     </form>

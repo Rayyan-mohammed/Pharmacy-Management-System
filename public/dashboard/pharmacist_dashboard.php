@@ -50,6 +50,11 @@ foreach($salesChartData as $data) {
                 <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
             </a>
             <div class="d-flex align-items-center gap-2">
+                <div class="position-relative" id="globalSearchWrap">
+                    <input type="text" class="form-control form-control-sm bg-white bg-opacity-25 text-white border-0" 
+                           id="globalSearch" placeholder="Search..." style="width: 200px;" autocomplete="off">
+                    <div class="dropdown-menu shadow-lg p-0" id="searchDropdown" style="width: 380px; max-height: 400px; overflow-y: auto;"></div>
+                </div>
                 <a class="btn btn-outline-light btn-sm" href="../users/profile.php"><i class="bi bi-person-circle"></i></a>
                 <a class="btn btn-light btn-sm" href="../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
             </div>
@@ -123,9 +128,18 @@ foreach($salesChartData as $data) {
                     <div class="col-6 col-md-4 col-lg-3"><a href="../inventory/inventory_report.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-clipboard-data"></i></div>Inventory</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../top_sales/top-selling.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-trophy"></i></div>Top Selling</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../supplier/supplier-management.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-truck"></i></div>Suppliers</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../purchase/purchase-management.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-truck-flatbed"></i></div>Purchases</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../purchase/purchase-history.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-clock-history"></i></div>Purchase History</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../purchase/supplier-payables.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-hourglass-split"></i></div>Payable Aging</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../purchase/settlements.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-wallet2"></i></div>Settlements</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../purchase/purchase-returns.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-arrow-counterclockwise"></i></div>Supplier Returns</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../sales/returns.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-arrow-return-left"></i></div>Returns</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../add/categories.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-tags"></i></div>Categories</a></div>
                     <div class="col-6 col-md-4 col-lg-3"><a href="../inventory/alerts.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-bell"></i></div>Alerts</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../inventory/reorder_suggestions.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-arrow-repeat"></i></div>Reorder Plan</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../settings/customer_ledger.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-people-fill"></i></div>Customer Ledger</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../settings/stock_analytics.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-graph-up"></i></div>Stock Analytics</a></div>
+                    <div class="col-6 col-md-4 col-lg-3"><a href="../inventory/alert_center.php" class="card dashboard-btn"><div class="dashboard-icon"><i class="bi bi-bell-fill"></i></div>Alert Center</a></div>
                 </div>
 
                 <!-- Sales Chart -->
@@ -246,5 +260,39 @@ foreach($salesChartData as $data) {
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function() {
+        const input = document.getElementById('globalSearch');
+        const dropdown = document.getElementById('searchDropdown');
+        if (!input || !dropdown) return;
+        let timer;
+        input.addEventListener('input', function() {
+            clearTimeout(timer);
+            const q = this.value.trim();
+            if (q.length < 2) { dropdown.classList.remove('show'); return; }
+            timer = setTimeout(() => {
+                fetch('../api/search.php?q=' + encodeURIComponent(q))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.results || data.results.length === 0) {
+                            dropdown.innerHTML = '<div class="p-3 text-muted text-center small">No results found</div>';
+                        } else {
+                            dropdown.innerHTML = data.results.map(r => 
+                                `<a href="${r.url}" class="dropdown-item d-flex align-items-start py-2 px-3 border-bottom">
+                                    <i class="bi ${r.icon} me-2 mt-1 text-primary"></i>
+                                    <div><div class="fw-bold small">${r.title}</div><div class="text-muted" style="font-size:0.75rem">${r.detail}</div></div>
+                                    <span class="badge bg-light text-secondary ms-auto" style="font-size:0.65rem">${r.type}</span>
+                                </a>`
+                            ).join('');
+                        }
+                        dropdown.classList.add('show');
+                    });
+            }, 300);
+        });
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#globalSearchWrap')) dropdown.classList.remove('show');
+        });
+    })();
+    </script>
 </body>
 </html>

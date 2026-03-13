@@ -1,8 +1,6 @@
 <?php
 require_once '../../app/auth.php';
 checkRole(['Administrator', 'Pharmacist', 'Staff']);
-require_once '../../app/Config/config.php';
-require_once '../../app/Core/Database.php';
 
 // Function to get aggregated medicine stock
 function getMedicinesStock($conn) {
@@ -83,7 +81,7 @@ $medicinesArray = $medicines ? $medicines->fetchAll(PDO::FETCH_ASSOC) : [];
 
                 <?php if (isset($_SESSION['success'])): ?>
                     <div class="alert alert-success m-3 alert-dismissible fade show">
-                        <i class="bi bi-check-circle me-2"></i><?php echo $_SESSION['success']; ?>
+                        <i class="bi bi-check-circle me-2"></i><?php echo htmlspecialchars($_SESSION['success']); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                     <?php unset($_SESSION['success']); ?>
@@ -124,7 +122,7 @@ $medicinesArray = $medicines ? $medicines->fetchAll(PDO::FETCH_ASSOC) : [];
                                             <span class="badge <?php echo $statusClass; ?> rounded-pill px-3"><?php echo $statusText; ?></span>
                                         </td>
                                         <td class="text-end pe-4">
-                                            <a href="../check/check-stock.php" class="btn btn-sm btn-outline-info me-1" title="View Stock"><i class="bi bi-eye"></i> Details</a>
+                                            <a href="../add/edit-medicine.php?id=<?php echo $medicine['id']; ?>" class="btn btn-sm btn-outline-info me-1" title="View & Edit"><i class="bi bi-eye"></i> Details</a>
                                             <a href="../update/update-stock.php?id=<?php echo $medicine['id']; ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Update</a>
                                         </td>
                                     </tr>

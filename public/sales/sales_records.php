@@ -7,10 +7,36 @@ $db = $database->getConnection();
 $medicine = new Medicine($db);
 $userRole = $_SESSION['currentUser']['role'] ?? 'Staff';
 
+function sales_column_exists($db, $column) {
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sales' AND COLUMN_NAME = :column");
+        $stmt->bindValue(':column', $column);
+        $stmt->execute();
+        return ((int)$stmt->fetchColumn()) > 0;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+$hasPaymentMethod = sales_column_exists($db, 'payment_method');
+$hasCustomerPhone = sales_column_exists($db, 'customer_phone');
+$hasNetTotal = sales_column_exists($db, 'net_total');
+$hasTaxAmount = sales_column_exists($db, 'tax_amount');
+$hasDiscountAmount = sales_column_exists($db, 'discount_amount');
+$hasPaymentReference = sales_column_exists($db, 'payment_reference');
+$revenueExpr = $hasNetTotal ? 'COALESCE(s.net_total, s.total_price)' : 's.total_price';
+
 // Filters
 $startDate = $_GET['start_date'] ?? '';
 $endDate   = $_GET['end_date'] ?? '';
+$paymentMethod = $_GET['payment_method'] ?? '';
+$allowedMethods = ['Cash', 'Card', 'UPI'];
+if (!in_array($paymentMethod, $allowedMethods, true)) {
+    $paymentMethod = '';
+}
 $filterError = '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 25;
 
 if ($startDate && $endDate && $startDate > $endDate) {
     $filterError = 'Start date cannot be after end date.';
@@ -27,14 +53,56 @@ if ($endDate) {
     $conditions[] = "DATE(s.sale_date) <= :end_date";
     $params[':end_date'] = $endDate;
 }
+if ($hasPaymentMethod && $paymentMethod !== '') {
+    $conditions[] = "s.payment_method = :payment_method";
+    $params[':payment_method'] = $paymentMethod;
+}
 
 $whereSql = count($conditions) ? (' WHERE ' . implode(' AND ', $conditions)) : '';
 
-$query = "SELECT s.*, m.name as medicine_name, m.inventory_price 
+// Get total count for pagination
+$countQuery = "SELECT COUNT(*) as total FROM sales s" . $whereSql;
+$countStmt = $db->prepare($countQuery);
+foreach ($params as $key => $val) {
+    $countStmt->bindValue($key, $val);
+}
+$countStmt->execute();
+$totalRecords = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+$totalPages = max(1, ceil($totalRecords / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
+
+// Fetch all matching rows for aggregate stats (lightweight - no JOIN needed for totals)
+$aggQuery = "SELECT SUM({$revenueExpr}) as totalRevenue, 
+             SUM({$revenueExpr} - (m.inventory_price * s.quantity)) as totalProfit,
+             SUM(s.quantity) as totalQty,
+             COUNT(DISTINCT s.customer_name) as uniqueCustomers
+             FROM sales s JOIN medicines m ON s.medicine_id = m.id" . $whereSql;
+$aggStmt = $db->prepare($aggQuery);
+foreach ($params as $key => $val) {
+    $aggStmt->bindValue($key, $val);
+}
+$aggStmt->execute();
+$agg = $aggStmt->fetch(PDO::FETCH_ASSOC);
+$totalRevenue = (float)($agg['totalRevenue'] ?? 0);
+$totalProfit = (float)($agg['totalProfit'] ?? 0);
+$totalQty = (int)($agg['totalQty'] ?? 0);
+$uniqueCustomers = (int)($agg['uniqueCustomers'] ?? 0);
+$avgOrderValue = $totalRecords > 0 ? $totalRevenue / $totalRecords : 0;
+$profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+
+// Paginated query for table display
+$selectCustomerPhone = $hasCustomerPhone ? ', s.customer_phone' : ', NULL AS customer_phone';
+$selectPaymentMethod = $hasPaymentMethod ? ', s.payment_method' : ', NULL AS payment_method';
+$selectNetTotal = $hasNetTotal ? ', s.net_total' : ', s.total_price as net_total';
+$selectTaxAmount = $hasTaxAmount ? ', s.tax_amount' : ', 0 as tax_amount';
+$selectDiscountAmount = $hasDiscountAmount ? ', s.discount_amount' : ', 0 as discount_amount';
+$selectPaymentReference = $hasPaymentReference ? ', s.payment_reference' : ', NULL as payment_reference';
+$query = "SELECT s.*, m.name as medicine_name, m.inventory_price" . $selectCustomerPhone . $selectPaymentMethod . $selectNetTotal . $selectTaxAmount . $selectDiscountAmount . $selectPaymentReference . "
           FROM sales s 
           JOIN medicines m ON s.medicine_id = m.id" .
           $whereSql .
-          " ORDER BY s.sale_date DESC";
+          " ORDER BY s.sale_date DESC LIMIT $perPage OFFSET $offset";
 
 $stmt = $db->prepare($query);
 foreach ($params as $key => $val) {
@@ -43,44 +111,33 @@ foreach ($params as $key => $val) {
 $stmt->execute();
 $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Calculate totals
-$totalRevenue = 0;
-$totalProfit = 0;
+// For charts: daily and medicine aggregation (across all filtered data, not just current page)
+$chartQuery = "SELECT DATE(s.sale_date) as day, SUM({$revenueExpr}) as revenue, 
+               SUM({$revenueExpr} - (m.inventory_price * s.quantity)) as profit, COUNT(*) as cnt
+               FROM sales s JOIN medicines m ON s.medicine_id = m.id" . $whereSql . 
+               " GROUP BY DATE(s.sale_date) ORDER BY day ASC";
+$chartStmt = $db->prepare($chartQuery);
+foreach ($params as $key => $val) {
+    $chartStmt->bindValue($key, $val);
+}
+$chartStmt->execute();
 $dailyAgg = [];
-$medicineAgg = [];
-$totalQty = 0;
-$customerSet = [];
-
-foreach ($sales as $sale) {
-    $revenue = (float)$sale['total_price'];
-    $profit = $revenue - ($sale['inventory_price'] * $sale['quantity']);
-    $totalRevenue += $revenue;
-    $totalProfit += $profit;
-    $totalQty += $sale['quantity'];
-
-    // Daily aggregation
-    $day = date('Y-m-d', strtotime($sale['sale_date']));
-    if (!isset($dailyAgg[$day])) $dailyAgg[$day] = ['revenue' => 0, 'profit' => 0, 'count' => 0];
-    $dailyAgg[$day]['revenue'] += $revenue;
-    $dailyAgg[$day]['profit'] += $profit;
-    $dailyAgg[$day]['count']++;
-
-    // Medicine aggregation
-    $mName = $sale['medicine_name'];
-    if (!isset($medicineAgg[$mName])) $medicineAgg[$mName] = ['revenue' => 0, 'qty' => 0];
-    $medicineAgg[$mName]['revenue'] += $revenue;
-    $medicineAgg[$mName]['qty'] += $sale['quantity'];
-
-    // Unique customers
-    if (!empty($sale['customer_name'])) $customerSet[$sale['customer_name']] = true;
+while ($row = $chartStmt->fetch(PDO::FETCH_ASSOC)) {
+    $dailyAgg[$row['day']] = ['revenue' => (float)$row['revenue'], 'profit' => (float)$row['profit'], 'count' => (int)$row['cnt']];
 }
 
-ksort($dailyAgg);
-arsort($medicineAgg);
-$topMedByRevenue = array_slice($medicineAgg, 0, 8, true);
-$avgOrderValue = count($sales) > 0 ? $totalRevenue / count($sales) : 0;
-$uniqueCustomers = count($customerSet);
-$profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+$medQuery = "SELECT m.name, SUM({$revenueExpr}) as revenue, SUM(s.quantity) as qty
+             FROM sales s JOIN medicines m ON s.medicine_id = m.id" . $whereSql . 
+             " GROUP BY m.id, m.name ORDER BY revenue DESC LIMIT 8";
+$medStmt = $db->prepare($medQuery);
+foreach ($params as $key => $val) {
+    $medStmt->bindValue($key, $val);
+}
+$medStmt->execute();
+$topMedByRevenue = [];
+while ($row = $medStmt->fetch(PDO::FETCH_ASSOC)) {
+    $topMedByRevenue[$row['name']] = ['revenue' => (float)$row['revenue'], 'qty' => (int)$row['qty']];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -111,7 +168,7 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                 <p class="text-secondary mb-0">Overview of transactions and revenue.</p>
             </div>
             <div class="col-auto d-flex gap-2 align-items-center">
-                <a href="../api/export_csv.php?type=sales<?php echo $startDate ? '&start_date=' . urlencode($startDate) : ''; ?><?php echo $endDate ? '&end_date=' . urlencode($endDate) : ''; ?>" class="btn btn-success">
+                <a href="../api/export_csv.php?type=sales<?php echo $startDate ? '&start_date=' . urlencode($startDate) : ''; ?><?php echo $endDate ? '&end_date=' . urlencode($endDate) : ''; ?><?php echo ($hasPaymentMethod && $paymentMethod) ? '&payment_method=' . urlencode($paymentMethod) : ''; ?>" class="btn btn-success">
                     <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export CSV
                 </a>
                 <button class="btn btn-outline-primary" onclick="window.print()">
@@ -135,9 +192,20 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                         <label class="form-label text-muted small">End Date</label>
                         <input type="date" name="end_date" class="form-control" value="<?php echo htmlspecialchars($endDate); ?>">
                     </div>
+                    <?php if ($hasPaymentMethod): ?>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Payment Method</label>
+                        <select name="payment_method" class="form-select">
+                            <option value="">All Methods</option>
+                            <option value="Cash" <?php echo $paymentMethod === 'Cash' ? 'selected' : ''; ?>>Cash</option>
+                            <option value="Card" <?php echo $paymentMethod === 'Card' ? 'selected' : ''; ?>>Card</option>
+                            <option value="UPI" <?php echo $paymentMethod === 'UPI' ? 'selected' : ''; ?>>UPI</option>
+                        </select>
+                    </div>
+                    <?php endif; ?>
                     <div class="col-md-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-2"></i>Apply Filter</button>
-                        <?php if($startDate || $endDate): ?>
+                        <?php if($startDate || $endDate || $paymentMethod): ?>
                             <a href="sales_records.php" class="btn btn-outline-secondary">Clear</a>
                         <?php endif; ?>
                     </div>
@@ -190,7 +258,7 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                             </div>
                             <div class="ms-3">
                                 <h6 class="text-muted text-uppercase small fw-bold mb-1">Transactions</h6>
-                                <h3 class="mb-0 fw-bold"><?php echo count($sales); ?></h3>
+                                <h3 class="mb-0 fw-bold"><?php echo $totalRecords; ?></h3>
                             </div>
                         </div>
                     </div>
@@ -212,8 +280,10 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                                 <th class="py-3">Medicine</th>
                                 <th class="py-3 text-center">Qty</th>
                                 <th class="py-3 text-end">Price</th>
-                                <th class="py-3 text-end">Total</th>
+                                <th class="py-3 text-end">Subtotal</th>
+                                <th class="py-3 text-end">Net</th>
                                 <th class="py-3">Customer</th>
+                                <th class="py-3">Payment</th>
                                 <?php if ($userRole !== 'Staff'): ?>
                                     <th class="py-3 text-end px-4">Profit</th>
                                 <?php endif; ?>
@@ -227,7 +297,7 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                                 
                                 $profit = isset($sale['profit']) && $sale['profit'] != 0 
                                           ? $sale['profit'] 
-                                          : ($sale['total_price'] - ($sale['inventory_price'] * $sale['quantity']));
+                                          : (($sale['net_total'] ?? $sale['total_price']) - ($sale['inventory_price'] * $sale['quantity']));
                             ?>
                                 <tr>
                                     <td class="px-4">
@@ -242,14 +312,30 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                                     </td>
                                     <td class="text-end text-muted">₹<?php echo number_format($unitPrice, 2); ?></td>
                                     <td class="text-end fw-bold">₹<?php echo number_format($sale['total_price'], 2); ?></td>
+                                    <td class="text-end fw-bold text-primary">₹<?php echo number_format($sale['net_total'] ?? $sale['total_price'], 2); ?></td>
                                     <td>
                                         <?php if(!empty($sale['customer_name'])): ?>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-sm bg-light rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
                                                     <i class="bi bi-person text-secondary" style="font-size: 0.8rem;"></i>
                                                 </div>
-                                                <?php echo htmlspecialchars($sale['customer_name']); ?>
+                                                <div>
+                                                    <div><?php echo htmlspecialchars($sale['customer_name']); ?></div>
+                                                    <?php if (!empty($sale['customer_phone'])): ?>
+                                                        <small class="text-muted"><?php echo htmlspecialchars($sale['customer_phone']); ?></small>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
+                                        <?php else: ?>
+                                            <span class="text-muted fst-italic">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($sale['payment_method'])): ?>
+                                            <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($sale['payment_method']); ?></span>
+                                            <?php if (!empty($sale['payment_reference'])): ?>
+                                                <div><small class="text-muted"><?php echo htmlspecialchars($sale['payment_reference']); ?></small></div>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="text-muted fst-italic">-</span>
                                         <?php endif; ?>
@@ -269,8 +355,9 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                         </tbody>
                         <tfoot class="bg-light">
                             <tr>
-                                <td colspan="4" class="text-end fw-bold py-3">Totals:</td>
+                                <td colspan="5" class="text-end fw-bold py-3">Totals:</td>
                                 <td class="text-end fw-bold py-3 text-primary">₹<?php echo number_format($totalRevenue, 2); ?></td>
+                                <td></td>
                                 <td></td>
                                 <?php if ($userRole !== 'Staff'): ?>
                                     <td class="text-end fw-bold py-3 text-success px-4">₹<?php echo number_format($totalProfit, 2); ?></td>
@@ -280,10 +367,54 @@ $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
                     </table>
                 </div>
             </div>
+            <?php if ($totalPages > 1): ?>
+            <div class="card-footer bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Showing <?php echo $offset + 1; ?>–<?php echo min($offset + $perPage, $totalRecords); ?> of <?php echo $totalRecords; ?> records</small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <?php
+                            $queryParams = [];
+                            if ($startDate) $queryParams['start_date'] = $startDate;
+                            if ($endDate) $queryParams['end_date'] = $endDate;
+                            if ($paymentMethod) $queryParams['payment_method'] = $paymentMethod;
+                            
+                            $buildUrl = function($p) use ($queryParams) {
+                                $queryParams['page'] = $p;
+                                return 'sales_records.php?' . http_build_query($queryParams);
+                            };
+                            ?>
+                            <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="<?php echo $buildUrl($page - 1); ?>">&laquo;</a>
+                            </li>
+                            <?php
+                            $startPage = max(1, $page - 2);
+                            $endPage = min($totalPages, $page + 2);
+                            if ($startPage > 1): ?>
+                                <li class="page-item"><a class="page-link" href="<?php echo $buildUrl(1); ?>">1</a></li>
+                                <?php if ($startPage > 2): ?><li class="page-item disabled"><span class="page-link">...</span></li><?php endif; ?>
+                            <?php endif;
+                            for ($p = $startPage; $p <= $endPage; $p++): ?>
+                                <li class="page-item <?php echo $p === $page ? 'active' : ''; ?>">
+                                    <a class="page-link" href="<?php echo $buildUrl($p); ?>"><?php echo $p; ?></a>
+                                </li>
+                            <?php endfor;
+                            if ($endPage < $totalPages): ?>
+                                <?php if ($endPage < $totalPages - 1): ?><li class="page-item disabled"><span class="page-link">...</span></li><?php endif; ?>
+                                <li class="page-item"><a class="page-link" href="<?php echo $buildUrl($totalPages); ?>"><?php echo $totalPages; ?></a></li>
+                            <?php endif; ?>
+                            <li class="page-item <?php echo $page >= $totalPages ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="<?php echo $buildUrl($page + 1); ?>">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <!-- Analytics Section -->
-        <?php if (count($sales) > 0): ?>
+        <?php if ($totalRecords > 0): ?>
         <hr class="my-5">
         <h4 class="fw-bold text-primary mb-4"><i class="bi bi-bar-chart-line me-2"></i>Sales Analytics</h4>
 

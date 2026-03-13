@@ -24,6 +24,7 @@ if($_POST) {
         $medicine->inventory_price = $_POST['inventory-price'] ?? 0;
         $medicine->sale_price = $_POST['sale-price'] ?? 0;
         $medicine->stock = $_POST['medicine-stock'] ?? 0;
+        $medicine->reorder_level = $_POST['reorder-level'] ?? 10;
         $medicine->prescription_needed = isset($_POST['prescription-needed']) ? 1 : 0;
         $medicine->expiration_date = $_POST['expiration-date'] ?? '';
         $batch_number = $_POST['batch-number'] ?? 'INITIAL-' . date('Ymd'); // Default Batch
@@ -170,6 +171,15 @@ if($_POST) {
                                    value="<?php echo isset($_POST['medicine-stock']) ? htmlspecialchars($_POST['medicine-stock']) : ''; ?>">
                         </div>
                         <div class="col-md-6">
+                            <label for="reorder-level" class="form-label">Reorder Level</label>
+                            <input type="number" min="1" class="form-control" id="reorder-level" name="reorder-level" required
+                                   value="<?php echo isset($_POST['reorder-level']) ? htmlspecialchars($_POST['reorder-level']) : '10'; ?>">
+                            <div class="form-text">Alert when stock falls to this level.</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
                             <label for="batch-number" class="form-label">Batch Number</label>
                             <input type="text" class="form-control" id="batch-number" name="batch-number" pattern="[A-Za-z0-9\-_]+" title="Alphanumeric, dash and underscore only"
                                    value="<?php echo isset($_POST['batch-number']) ? htmlspecialchars($_POST['batch-number']) : 'BATCH-' . date('Ymd'); ?>">

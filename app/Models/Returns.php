@@ -2,15 +2,30 @@
 class Returns {
     private $conn;
     private $table_name = "returns";
+    private $salesColumnCache = [];
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    public function create($saleId, $medicineId, $quantity, $reason, $refundAmount) {
+    private function hasSalesColumn($column) {
+        if (!array_key_exists($column, $this->salesColumnCache)) {
+            try {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sales' AND COLUMN_NAME = :column");
+                $stmt->bindValue(':column', $column);
+                $stmt->execute();
+                $this->salesColumnCache[$column] = ((int)$stmt->fetchColumn()) > 0;
+            } catch (Exception $e) {
+                $this->salesColumnCache[$column] = false;
+            }
+        }
+        return $this->salesColumnCache[$column];
+    }
+
+    public function create($saleId, $medicineId, $quantity, $reason, $refundAmount, $originalPaymentMethod = null) {
         $query = "INSERT INTO " . $this->table_name . " 
-                  (sale_id, medicine_id, quantity, reason, refund_amount, status)
-                  VALUES (:sale_id, :medicine_id, :quantity, :reason, :refund_amount, 'pending')";
+                  (sale_id, medicine_id, quantity, reason, refund_amount, original_payment_method, status)
+                  VALUES (:sale_id, :medicine_id, :quantity, :reason, :refund_amount, :original_payment_method, 'pending')";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':sale_id', $saleId, PDO::PARAM_INT);
@@ -18,10 +33,11 @@ class Returns {
         $stmt->bindParam(':quantity', $quantity, PDO::PARAM_INT);
         $stmt->bindParam(':reason', $reason);
         $stmt->bindParam(':refund_amount', $refundAmount);
+        $stmt->bindValue(':original_payment_method', $originalPaymentMethod ?: 'Cash');
         return $stmt->execute();
     }
 
-    public function approve($returnId, $processedBy) {
+    public function approve($returnId, $processedBy, $refundMethod = null, $refundReference = null) {
         $this->conn->beginTransaction();
         try {
             // Get return details
@@ -33,14 +49,26 @@ class Returns {
 
             // Update return status
             $query = "UPDATE " . $this->table_name . " 
-                      SET status = 'approved', processed_by = :processed_by, processed_at = NOW() 
+                      SET status = 'approved', processed_by = :processed_by, processed_at = NOW(), refunded_at = NOW(), refund_method = :refund_method, refund_reference = :refund_reference
                       WHERE id = :id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':processed_by', $processedBy, PDO::PARAM_INT);
+            $stmt->bindValue(':refund_method', $refundMethod ?: ($ret['original_payment_method'] ?? 'Cash'));
+            $stmt->bindValue(':refund_reference', $refundReference ?: null);
             $stmt->bindParam(':id', $returnId, PDO::PARAM_INT);
             $stmt->execute();
 
-            // Restock: add quantity back to medicines.stock
+            // Restock: add quantity back via a new batch entry
+            $batchQuery = "INSERT INTO medicine_batches (medicine_id, batch_number, quantity, expiration_date) 
+                           VALUES (:mid, :batch, :qty, DATE_ADD(CURDATE(), INTERVAL 6 MONTH))";
+            $batchStmt = $this->conn->prepare($batchQuery);
+            $batchStmt->bindParam(':mid', $ret['medicine_id'], PDO::PARAM_INT);
+            $batchNum = 'RETURN-' . $returnId . '-' . date('Ymd');
+            $batchStmt->bindParam(':batch', $batchNum);
+            $batchStmt->bindParam(':qty', $ret['quantity'], PDO::PARAM_INT);
+            $batchStmt->execute();
+
+            // Also update medicines.stock for backward compatibility
             $stockQuery = "UPDATE medicines SET stock = stock + :qty WHERE id = :mid";
             $stockStmt = $this->conn->prepare($stockQuery);
             $stockStmt->bindParam(':qty', $ret['quantity'], PDO::PARAM_INT);
@@ -77,7 +105,8 @@ class Returns {
     }
 
     public function readOne($id) {
-        $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date, s.unit_price
+        $salePaymentSelect = $this->hasSalesColumn('payment_method') ? 's.payment_method' : "'Cash'";
+        $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date, s.unit_price, {$salePaymentSelect} as sale_payment_method
                   FROM " . $this->table_name . " r
                   JOIN medicines m ON r.medicine_id = m.id
                   JOIN sales s ON r.sale_id = s.id
@@ -95,7 +124,9 @@ class Returns {
             $where = ' WHERE r.status = :status';
             $params[':status'] = $status;
         }
-        $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date,
+          $salePaymentSelect = $this->hasSalesColumn('payment_method') ? 's.payment_method' : "'Cash'";
+          $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date,
+              {$salePaymentSelect} as sale_payment_method,
                   u.first_name as processor_first, u.last_name as processor_last
                   FROM " . $this->table_name . " r
                   JOIN medicines m ON r.medicine_id = m.id

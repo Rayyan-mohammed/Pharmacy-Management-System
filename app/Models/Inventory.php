@@ -23,16 +23,10 @@ class Inventory {
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize input
-        $this->medicine_id = htmlspecialchars(strip_tags($this->medicine_id));
-        $this->type = htmlspecialchars(strip_tags($this->type));
-        $this->quantity = htmlspecialchars(strip_tags($this->quantity));
-        $this->reason = htmlspecialchars(strip_tags($this->reason));
-
         // Bind values
-        $stmt->bindParam(":medicine_id", $this->medicine_id);
+        $stmt->bindParam(":medicine_id", $this->medicine_id, PDO::PARAM_INT);
         $stmt->bindParam(":type", $this->type);
-        $stmt->bindParam(":quantity", $this->quantity);
+        $stmt->bindParam(":quantity", $this->quantity, PDO::PARAM_INT);
         $stmt->bindParam(":reason", $this->reason);
 
         if($stmt->execute()) {
@@ -42,7 +36,7 @@ class Inventory {
     }
 
     // Adjust stock atomically (Log + Update Batches + Update Medicine Total)
-    public function adjustStock($medicine_id, $quantity, $type, $reason, $batch_number = null, $expiration_date = null) {
+    public function adjustStock($medicine_id, $quantity, $type, $reason, $batch_number = null, $expiration_date = null, $branch_id = 1) {
         // Check if transaction is already active
         $transactionStartedLocal = false;
         if (!$this->conn->inTransaction()) {
@@ -52,9 +46,10 @@ class Inventory {
 
         try {
             // 1. Create Log
-            $logQuery = "INSERT INTO " . $this->table_name . " (medicine_id, type, quantity, reason) VALUES (:medicine_id, :type, :quantity, :reason)";
+            $logQuery = "INSERT INTO " . $this->table_name . " (medicine_id, branch_id, type, quantity, reason) VALUES (:medicine_id, :branch_id, :type, :quantity, :reason)";
             $stmt = $this->conn->prepare($logQuery);
             $stmt->bindParam(":medicine_id", $medicine_id);
+            $stmt->bindParam(":branch_id", $branch_id, PDO::PARAM_INT);
             $stmt->bindParam(":type", $type);
             $stmt->bindParam(":quantity", $quantity);
             $stmt->bindParam(":reason", $reason);
@@ -121,7 +116,7 @@ class Inventory {
                 } else {
                     // FIFO Deduction
                     // Get batches ordered by expiration date (earliest first)
-                    $getBatches = "SELECT id, quantity FROM medicine_batches WHERE medicine_id = :mid AND quantity > 0 ORDER BY expiration_date ASC";
+                    $getBatches = "SELECT id, quantity FROM medicine_batches WHERE medicine_id = :mid AND quantity > 0 AND expiration_date >= CURDATE() ORDER BY expiration_date ASC";
                     $stmtBatches = $this->conn->prepare($getBatches);
                     $stmtBatches->bindParam(':mid', $medicine_id);
                     $stmtBatches->execute();

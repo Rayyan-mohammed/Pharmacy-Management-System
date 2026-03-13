@@ -44,6 +44,12 @@ class Category {
     }
 
     public function delete($id) {
+        // Clear category reference from medicines first
+        $clearQuery = "UPDATE medicines SET category_id = NULL WHERE category_id = :id";
+        $clearStmt = $this->conn->prepare($clearQuery);
+        $clearStmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $clearStmt->execute();
+
         $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
