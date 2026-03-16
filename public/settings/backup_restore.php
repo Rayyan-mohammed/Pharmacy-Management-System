@@ -34,6 +34,13 @@ function build_insert_sql($db, $table) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
     $action = $_POST['action'] ?? '';
+    $sectionPassword = $_POST['section_password'] ?? '';
+
+    if (!defined('BACKUP_RESTORE_PASSWORD') || !hash_equals(BACKUP_RESTORE_PASSWORD, (string)$sectionPassword)) {
+        $message = 'Invalid Backup & Restore password.';
+        $messageType = 'danger';
+        $action = '';
+    }
 
     if ($action === 'backup') {
         try {
@@ -183,6 +190,10 @@ try {
                     <form method="POST">
                         <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                         <input type="hidden" name="action" value="backup">
+                        <div class="mb-2">
+                            <label class="form-label">Section Password</label>
+                            <input type="password" class="form-control" name="section_password" placeholder="Enter backup password" required>
+                        </div>
                         <button class="btn btn-success"><i class="bi bi-download me-1"></i>Download Backup (.sql)</button>
                     </form>
                 </div>
@@ -197,6 +208,10 @@ try {
                     <form method="POST" enctype="multipart/form-data" onsubmit="return confirm('Restore will modify database data. Continue?');">
                         <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                         <input type="hidden" name="action" value="restore">
+                        <div class="mb-2">
+                            <label class="form-label">Section Password</label>
+                            <input type="password" class="form-control" name="section_password" placeholder="Enter restore password" required>
+                        </div>
                         <div class="mb-2">
                             <input type="file" class="form-control" name="sql_file" accept=".sql" required>
                         </div>

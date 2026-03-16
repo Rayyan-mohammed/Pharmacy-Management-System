@@ -8,3 +8,6 @@ define('DB_PASS', '');
 // Application Configuration
 define('APP_NAME', 'Pharmacy Management System');
 define('BASE_URL', '/medical_management_new/public');
+
+// Security: change this in production
+define('BACKUP_RESTORE_PASSWORD', 'ChangeThis@123');

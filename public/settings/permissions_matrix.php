@@ -4,6 +4,7 @@ checkRole(['Administrator']);
 
 $database = new Database();
 $db = $database->getConnection();
+$pageError = '';
 
 $roles = ['Administrator', 'Pharmacist', 'Staff'];
 $permissions = [
@@ -17,24 +18,42 @@ $permissions = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
-    foreach ($roles as $role) {
-        foreach ($permissions as $perm) {
-            $key = 'perm_' . md5($role . '_' . $perm);
-            $allowed = isset($_POST[$key]) ? 1 : 0;
-            $up = $db->prepare("INSERT INTO role_permissions (role_name, permission_key, is_allowed) VALUES (:role, :perm, :allowed) ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)");
-            $up->bindValue(':role', $role);
-            $up->bindValue(':perm', $perm);
-            $up->bindValue(':allowed', $allowed, PDO::PARAM_INT);
-            $up->execute();
+    try {
+        foreach ($roles as $role) {
+            foreach ($permissions as $perm) {
+                $key = 'perm_' . md5($role . '_' . $perm);
+                $allowed = isset($_POST[$key]) ? 1 : 0;
+                $up = $db->prepare("INSERT INTO role_permissions (role_name, permission_key, is_allowed) VALUES (:role, :perm, :allowed) ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)");
+                $up->bindValue(':role', $role);
+                $up->bindValue(':perm', $perm);
+                $up->bindValue(':allowed', $allowed, PDO::PARAM_INT);
+                $up->execute();
+            }
         }
+        $saved = true;
+    } catch (Exception $e) {
+        $pageError = 'Unable to save permissions: ' . $e->getMessage();
     }
-    $saved = true;
 }
 
 $map = [];
-$stmt = $db->query("SELECT role_name, permission_key, is_allowed FROM role_permissions");
-foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-    $map[$r['role_name'] . '|' . $r['permission_key']] = (int)$r['is_allowed'] === 1;
+try {
+    // Self-heal: create table if migration was not run.
+    $db->exec("CREATE TABLE IF NOT EXISTS role_permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        role_name VARCHAR(50) NOT NULL,
+        permission_key VARCHAR(100) NOT NULL,
+        is_allowed TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_role_permission (role_name, permission_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $stmt = $db->query("SELECT role_name, permission_key, is_allowed FROM role_permissions");
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $map[$r['role_name'] . '|' . $r['permission_key']] = (int)$r['is_allowed'] === 1;
+    }
+} catch (Exception $e) {
+    $pageError = 'Permissions table is unavailable. Please run migration and reload this page.';
 }
 
 function checked_perm($map, $role, $perm) {
@@ -48,6 +67,7 @@ function checked_perm($map, $role, $perm) {
 <div class="container py-4">
     <h2 class="fw-bold text-primary mb-3">User Permissions Matrix</h2>
     <?php if (!empty($saved)): ?><div class="alert alert-success">Permissions updated.</div><?php endif; ?>
+    <?php if (!empty($pageError)): ?><div class="alert alert-danger"><?php echo htmlspecialchars($pageError); ?></div><?php endif; ?>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">

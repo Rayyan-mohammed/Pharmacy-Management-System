@@ -6,6 +6,14 @@ $database = new Database();
 $db = $database->getConnection();
 $returns = new Returns($db);
 
+function sale_ref_label($saleId, $invoiceNumber = null) {
+    $inv = trim((string)($invoiceNumber ?? ''));
+    if ($inv !== '') {
+        return $inv . ' (Sale #' . (int)$saleId . ')';
+    }
+    return 'Sale #' . (int)$saleId;
+}
+
 $message = '';
 $messageType = '';
 
@@ -77,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $statusFilter = $_GET['status'] ?? '';
 $allReturns = $returns->readAll($statusFilter ?: null);
 $stats = $returns->getStats();
+$returnableSales = $returns->getRecentSalesForReturn(250);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -168,6 +177,7 @@ $stats = $returns->getStats();
                             <tr>
                                 <th class="px-4 py-3">#</th>
                                 <th class="py-3">Date</th>
+                                <th class="py-3">Sale Ref</th>
                                 <th class="py-3">Medicine</th>
                                 <th class="py-3">Customer</th>
                                 <th class="py-3 text-center">Qty</th>
@@ -180,7 +190,7 @@ $stats = $returns->getStats();
                         </thead>
                         <tbody>
                             <?php if (empty($allReturns)): ?>
-                                <tr><td colspan="10" class="text-center text-muted py-5">No returns found.</td></tr>
+                                <tr><td colspan="11" class="text-center text-muted py-5">No returns found.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($allReturns as $r): ?>
                                 <tr>
@@ -188,6 +198,9 @@ $stats = $returns->getStats();
                                     <td>
                                         <div><?php echo date('d M Y', strtotime($r['created_at'])); ?></div>
                                         <small class="text-muted"><?php echo date('h:i A', strtotime($r['created_at'])); ?></small>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold"><?php echo htmlspecialchars(sale_ref_label($r['sale_id'] ?? 0, $r['sale_invoice_number'] ?? '')); ?></span>
                                     </td>
                                     <td class="fw-bold text-primary"><?php echo htmlspecialchars($r['medicine_name']); ?></td>
                                     <td><?php echo htmlspecialchars($r['customer_name'] ?? '-'); ?></td>
@@ -258,13 +271,24 @@ $stats = $returns->getStats();
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Sale ID *</label>
-                            <input type="number" name="sale_id" class="form-control" placeholder="Enter the Sale/Invoice ID" required min="1">
-                            <small class="text-muted">Find Sale ID from Sales Records page.</small>
+                            <label class="form-label">Sale / Invoice Reference *</label>
+                            <select name="sale_id" class="form-select" id="saleSelect" required onchange="updateSelectedSaleHint()">
+                                <option value="">Select a sale</option>
+                                <?php foreach ($returnableSales as $s): ?>
+                                    <option value="<?php echo (int)$s['sale_id']; ?>"
+                                            data-medicine="<?php echo htmlspecialchars($s['medicine_name']); ?>"
+                                            data-customer="<?php echo htmlspecialchars($s['customer_name'] ?? 'Walk-in'); ?>"
+                                            data-returnable="<?php echo (int)$s['returnable_qty']; ?>"
+                                            data-date="<?php echo date('d M Y', strtotime($s['sale_date'])); ?>">
+                                        <?php echo htmlspecialchars(sale_ref_label($s['sale_id'], $s['invoice_number'] ?? '')); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="text-muted" id="saleSelectedHint">Choose a sale to see medicine/customer and returnable qty.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Quantity to Return *</label>
-                            <input type="number" name="quantity" class="form-control" required min="1">
+                            <input type="number" name="quantity" class="form-control" id="returnQtyInput" required min="1">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Reason for Return *</label>
@@ -281,5 +305,30 @@ $stats = $returns->getStats();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function updateSelectedSaleHint() {
+        const sel = document.getElementById('saleSelect');
+        const hint = document.getElementById('saleSelectedHint');
+        const qtyInput = document.getElementById('returnQtyInput');
+        if (!sel || !hint || !qtyInput) return;
+
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) {
+            hint.textContent = 'Choose a sale to see medicine/customer and returnable qty.';
+            qtyInput.removeAttribute('max');
+            return;
+        }
+
+        const medicine = opt.getAttribute('data-medicine') || '-';
+        const customer = opt.getAttribute('data-customer') || '-';
+        const returnable = parseInt(opt.getAttribute('data-returnable') || '0');
+        const date = opt.getAttribute('data-date') || '';
+        hint.textContent = `Medicine: ${medicine} | Customer: ${customer} | Date: ${date} | Returnable: ${returnable}`;
+        qtyInput.max = returnable;
+        if (parseInt(qtyInput.value || '0') > returnable) {
+            qtyInput.value = returnable > 0 ? returnable : 1;
+        }
+    }
+    </script>
 </body>
 </html>

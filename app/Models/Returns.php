@@ -105,8 +105,9 @@ class Returns {
     }
 
     public function readOne($id) {
+        $saleInvoiceSelect = $this->hasSalesColumn('invoice_number') ? 's.invoice_number' : 'NULL';
         $salePaymentSelect = $this->hasSalesColumn('payment_method') ? 's.payment_method' : "'Cash'";
-        $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date, s.unit_price, {$salePaymentSelect} as sale_payment_method
+        $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date, s.unit_price, s.id as sale_id, {$saleInvoiceSelect} as sale_invoice_number, {$salePaymentSelect} as sale_payment_method
                   FROM " . $this->table_name . " r
                   JOIN medicines m ON r.medicine_id = m.id
                   JOIN sales s ON r.sale_id = s.id
@@ -125,7 +126,9 @@ class Returns {
             $params[':status'] = $status;
         }
           $salePaymentSelect = $this->hasSalesColumn('payment_method') ? 's.payment_method' : "'Cash'";
-          $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date,
+          $saleInvoiceSelect = $this->hasSalesColumn('invoice_number') ? 's.invoice_number' : 'NULL';
+          $query = "SELECT r.*, m.name as medicine_name, s.customer_name, s.sale_date, s.id as sale_id,
+              {$saleInvoiceSelect} as sale_invoice_number,
               {$salePaymentSelect} as sale_payment_method,
                   u.first_name as processor_first, u.last_name as processor_last
                   FROM " . $this->table_name . " r
@@ -140,7 +143,9 @@ class Returns {
     }
 
     public function getSaleDetails($saleId) {
+        $saleInvoiceSelect = $this->hasSalesColumn('invoice_number') ? 's.invoice_number' : 'NULL';
         $query = "SELECT s.*, m.name as medicine_name, m.sale_price, m.id as medicine_id
+                  , {$saleInvoiceSelect} as invoice_number
                   FROM sales s
                   JOIN medicines m ON s.medicine_id = m.id
                   WHERE s.id = :id";
@@ -148,6 +153,35 @@ class Returns {
         $stmt->bindParam(':id', $saleId, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getRecentSalesForReturn($limit = 200) {
+        $saleInvoiceSelect = $this->hasSalesColumn('invoice_number') ? 's.invoice_number' : 'NULL';
+        $query = "SELECT s.id as sale_id,
+                         {$saleInvoiceSelect} as invoice_number,
+                         s.sale_date,
+                         s.customer_name,
+                         s.quantity,
+                         s.total_price,
+                         s.unit_price,
+                         m.name as medicine_name,
+                         COALESCE(rq.returned_qty, 0) as returned_qty,
+                         (s.quantity - COALESCE(rq.returned_qty, 0)) as returnable_qty
+                  FROM sales s
+                  JOIN medicines m ON m.id = s.medicine_id
+                  LEFT JOIN (
+                      SELECT sale_id, SUM(quantity) as returned_qty
+                      FROM returns
+                      WHERE status IN ('pending', 'approved')
+                      GROUP BY sale_id
+                  ) rq ON rq.sale_id = s.id
+                  WHERE (s.quantity - COALESCE(rq.returned_qty, 0)) > 0
+                  ORDER BY s.sale_date DESC
+                  LIMIT :limit";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getReturnedQtyForSale($saleId) {
