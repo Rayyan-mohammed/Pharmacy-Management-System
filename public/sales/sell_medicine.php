@@ -205,7 +205,7 @@ $medicines = $medicine->read();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sell Medicine - Pharmacy Pro</title>
+    <title>Sell Medicine - PharmaFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -214,7 +214,7 @@ $medicines = $medicine->read();
     <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">
-                <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
+                <i class="bi bi-heart-pulse-fill me-2"></i>PharmaFlow Pro
             </a>
         </div>
     </nav>

@@ -28,7 +28,7 @@ $lowStockItems = $medicine->getLowStockItems();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Dashboard - Pharmacy Pro</title>
+    <title>Staff Dashboard - PharmaFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
@@ -37,7 +37,7 @@ $lowStockItems = $medicine->getLowStockItems();
     <nav class="navbar navbar-dark bg-primary">
         <div class="container d-flex justify-content-between align-items-center">
             <a class="navbar-brand fw-bold" href="#">
-                <i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro
+                <i class="bi bi-heart-pulse-fill me-2"></i>PharmaFlow Pro
             </a>
             <div class="d-flex align-items-center gap-2">
                 <div class="position-relative" id="globalSearchWrap">
@@ -220,3 +220,4 @@ $lowStockItems = $medicine->getLowStockItems();
     </script>
 </body>
 </html>
+

@@ -1,9 +1,9 @@
-# PHARMACY MANAGEMENT SYSTEM - PROJECT ABSTRACT AND ER MODEL
+# PHARMAFLOW PRO - PROJECT ABSTRACT AND ER MODEL
 
 ## Revised Abstract
 
 ### Project Overview and Purpose
-The Pharmacy Management System is a web-based, transactional information system developed to digitize and optimize core pharmacy operations. The project addresses common retail-pharmacy pain points such as fragmented stock tracking, manual billing errors, weak return traceability, delayed replenishment decisions, and limited operational visibility.
+PharmaFlow Pro is a web-based, transactional information system developed to digitize and optimize core pharmacy operations. The project addresses common retail-pharmacy pain points such as fragmented stock tracking, manual billing errors, weak return traceability, delayed replenishment decisions, and limited operational visibility.
 
 The platform unifies inventory control, sales billing, prescription processing, supplier and purchase workflows, return handling, financial/cash tracking, and role-based access management into a single system. Its primary objective is to improve service speed, data reliability, and decision quality while reducing operational risk.
 

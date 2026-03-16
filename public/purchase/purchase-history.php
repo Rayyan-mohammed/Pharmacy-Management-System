@@ -46,7 +46,7 @@ $detailItems = $detailsPurchaseId > 0 ? $purchase->getPurchaseItems($detailsPurc
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase History - Pharmacy Pro</title>
+    <title>Purchase History - PharmaFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
@@ -54,7 +54,7 @@ $detailItems = $detailsPurchaseId > 0 ? $purchase->getPurchaseItems($detailsPurc
 <body>
 <nav class="navbar navbar-dark bg-primary">
     <div class="container d-flex justify-content-between align-items-center">
-        <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php"><i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro</a>
+        <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php"><i class="bi bi-heart-pulse-fill me-2"></i>PharmaFlow Pro</a>
         <div class="d-flex gap-2">
             <a href="purchase-management.php" class="btn btn-sm btn-light"><i class="bi bi-truck me-1"></i>New Purchase</a>
             <a href="supplier-payables.php" class="btn btn-sm btn-outline-light"><i class="bi bi-hourglass-split me-1"></i>Payable Aging</a>
@@ -205,3 +205,4 @@ $detailItems = $detailsPurchaseId > 0 ? $purchase->getPurchaseItems($detailsPurc
 </div>
 </body>
 </html>
+

@@ -42,7 +42,7 @@ $history = $purchase->getSettlementHistory(0, 100);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supplier Settlements - Pharmacy Pro</title>
+    <title>Supplier Settlements - PharmaFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../styles.css" rel="stylesheet">
@@ -50,7 +50,7 @@ $history = $purchase->getSettlementHistory(0, 100);
 <body>
 <nav class="navbar navbar-dark bg-primary">
     <div class="container d-flex justify-content-between align-items-center">
-        <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php"><i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro</a>
+        <a class="navbar-brand fw-bold" href="../dashboard/dashboard.php"><i class="bi bi-heart-pulse-fill me-2"></i>PharmaFlow Pro</a>
         <div class="d-flex gap-2">
             <a href="purchase-history.php" class="btn btn-sm btn-light">Purchase History</a>
             <a href="supplier-payables.php" class="btn btn-sm btn-outline-light">Payable Aging</a>
@@ -164,3 +164,4 @@ $history = $purchase->getSettlementHistory(0, 100);
 </div>
 </body>
 </html>
+

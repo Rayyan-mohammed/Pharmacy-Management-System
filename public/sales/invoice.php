@@ -334,7 +334,7 @@ $card_auth_ref = trim((string)($first_sale['card_auth_ref'] ?? ''));
     <!-- Header -->
     <div class="invoice-header">
         <div class="brand">
-            <h2><i class="bi bi-capsule"></i> Pharmacy Pro</h2>
+            <h2><i class="bi bi-capsule"></i> PharmaFlow Pro</h2>
             <p>123 Medical Plaza, Health City | (555) 123-4567</p>
         </div>
         <div class="invoice-meta">
@@ -424,7 +424,7 @@ $card_auth_ref = trim((string)($first_sale['card_auth_ref'] ?? ''));
     <!-- Footer -->
     <div class="invoice-footer">
         <div class="footer-note">
-            <i class="bi bi-heart-pulse"></i> Thank you for choosing <strong>Pharmacy Pro</strong>.<br>
+            <i class="bi bi-heart-pulse"></i> Thank you for choosing <strong>PharmaFlow Pro</strong>.<br>
             We wish you a speedy recovery. Get well soon!
         </div>
         <div class="footer-note" style="text-align:right;">
@@ -457,3 +457,4 @@ $card_auth_ref = trim((string)($first_sale['card_auth_ref'] ?? ''));
 
 </body>
 </html>
+

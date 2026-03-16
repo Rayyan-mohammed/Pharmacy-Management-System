@@ -45,9 +45,9 @@ $branches = $db->query("SELECT * FROM branches ORDER BY id ASC")->fetchAll(PDO::
 $transfers = $db->query("SELECT st.*, b1.branch_name as from_branch, b2.branch_name as to_branch FROM stock_transfers st JOIN branches b1 ON b1.id = st.from_branch_id JOIN branches b2 ON b2.id = st.to_branch_id ORDER BY st.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Branch Management - Pharmacy Pro</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="../styles.css" rel="stylesheet"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Branch Management - PharmaFlow Pro</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="../styles.css" rel="stylesheet"></head>
 <body>
-<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">Pharmacy Pro</a></div></nav>
+<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">PharmaFlow Pro</a></div></nav>
 <div class="container py-4">
     <h2 class="fw-bold text-primary mb-3">Branch Management (Multi-Store)</h2>
     <?php if ($message): ?><div class="alert alert-<?php echo $messageType; ?>"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
@@ -86,3 +86,4 @@ $transfers = $db->query("SELECT st.*, b1.branch_name as from_branch, b2.branch_n
     </div>
 </div>
 </body></html>
+

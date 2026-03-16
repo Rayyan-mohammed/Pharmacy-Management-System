@@ -71,9 +71,9 @@ foreach ($dues as $d) {
 $alerts = $db->query("SELECT * FROM alert_events ORDER BY FIELD(status, 'Open', 'Acknowledged', 'Closed'), FIELD(severity, 'Critical', 'High', 'Medium', 'Low'), created_at DESC LIMIT 500")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Alert Center - Pharmacy Pro</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet"><link href="../styles.css" rel="stylesheet"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Alert Center - PharmaFlow Pro</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet"><link href="../styles.css" rel="stylesheet"></head>
 <body>
-<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-bold" href="../dashboard/dashboard.php"><i class="bi bi-heart-pulse-fill me-2"></i>Pharmacy Pro</a></div></nav>
+<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-bold" href="../dashboard/dashboard.php"><i class="bi bi-heart-pulse-fill me-2"></i>PharmaFlow Pro</a></div></nav>
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="fw-bold text-primary mb-0"><i class="bi bi-bell-fill me-2"></i>Alert Escalation Center</h2>
@@ -106,3 +106,4 @@ $alerts = $db->query("SELECT * FROM alert_events ORDER BY FIELD(status, 'Open', 
     </div>
 </div>
 </body></html>
+

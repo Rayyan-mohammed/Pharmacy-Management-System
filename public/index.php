@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Pharmacy Pro</title>
+    <title>Login - PharmaFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;background:var(--primary-50);margin-bottom:1rem;">
                 <i class="bi bi-heart-pulse-fill" style="font-size:1.5rem;color:var(--primary);"></i>
             </div>
-            <h3>Pharmacy Pro</h3>
+            <h3>PharmaFlow Pro</h3>
             <p>Sign in to your account</p>
         </div>
         

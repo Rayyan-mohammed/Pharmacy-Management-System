@@ -61,9 +61,9 @@ function checked_perm($map, $role, $perm) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Permissions Matrix - Pharmacy Pro</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="../styles.css" rel="stylesheet"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Permissions Matrix - PharmaFlow Pro</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="../styles.css" rel="stylesheet"></head>
 <body>
-<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">Pharmacy Pro</a></div></nav>
+<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-bold" href="../dashboard/dashboard.php">PharmaFlow Pro</a></div></nav>
 <div class="container py-4">
     <h2 class="fw-bold text-primary mb-3">User Permissions Matrix</h2>
     <?php if (!empty($saved)): ?><div class="alert alert-success">Permissions updated.</div><?php endif; ?>
@@ -94,3 +94,4 @@ function checked_perm($map, $role, $perm) {
     </div>
 </div>
 </body></html>
+

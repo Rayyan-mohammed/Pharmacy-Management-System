@@ -1,4 +1,4 @@
-# Pharmacy Management System (Pharmacy Pro)
+# PharmaFlow Pro
 
 A complete, web-based pharmacy operations platform built with PHP and MySQL for day-to-day retail pharmacy workflows.
 
@@ -23,7 +23,7 @@ This project centralizes inventory, billing, prescriptions, suppliers, returns, 
 
 ## Project Overview
 
-Pharmacy Pro helps pharmacy teams manage end-to-end operations:
+PharmaFlow Pro helps pharmacy teams manage end-to-end operations:
 
 - Maintain medicine catalog, pricing, stock, categories, and batches.
 - Process sales with invoice grouping and payment details.
