@@ -1,70 +1,251 @@
-# Pharmacy Management System
+# Pharmacy Management System (Pharmacy Pro)
 
-A comprehensive web-based solution for managing pharmacy operations, inventory, sales, and reporting.
+A complete, web-based pharmacy operations platform built with PHP and MySQL for day-to-day retail pharmacy workflows.
 
-## Features
+This project centralizes inventory, billing, prescriptions, suppliers, returns, reporting, user access control, and operational safeguards in one application. It is designed to reduce manual work, improve stock and cash accuracy, and support faster customer service.
 
-- **User Authentication System**: Secure login and registration with role-based access control
-- **Dashboard**: Intuitive dashboard with quick access to all main functions
-- **Inventory Management**:
-  - Add new medicines
-  - Update stock levels
-  - Check current inventory
-  - Generate inventory reports
-  - Expiration date tracking
-- **Sales Management**:
-  - Process medicine sales
-  - Record and track sales history
-  - View sales reports
-- **Analytics and Reporting**:
-  - Top selling medicines analysis
-  - Sales statistics and trends
-  - Financial reporting
-- **Supplier Management**: Track and manage supplier information
-- **Prescription Management**: Record and track patient prescriptions
+## Table of Contents
 
-## Technologies Used
+- Project Overview
+- Core Features
+- Technology Stack
+- Project Structure
+- Prerequisites
+- Installation and Setup
+- Configuration
+- Usage and Typical Workflows
+- Security and Operational Notes
+- API Endpoints
+- Troubleshooting
+- Contribution Guide
+- License
+- Acknowledgments
 
-- **Frontend**: HTML, CSS, Bootstrap 5, JavaScript
-- **Backend**: PHP
-- **Database**: MySQL
+## Project Overview
 
-## Installation
+Pharmacy Pro helps pharmacy teams manage end-to-end operations:
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/pharmacy-management-system.git
-   ```
+- Maintain medicine catalog, pricing, stock, categories, and batches.
+- Process sales with invoice grouping and payment details.
+- Handle customer returns with status approvals and refund tracking.
+- Manage suppliers, purchases, payables, and purchase returns.
+- Track prescriptions and prescription item fulfillment.
+- Monitor expiration risk, reorder needs, and stock alerts.
+- Generate statistics, top-sales insights, and financial summaries.
+- Operate safely with role-based access, CSRF validation, and activity logging.
 
-2. Import the database schema:
-   - Find `database.sql` in the `public` directory
-   - Create a MySQL database named `medical_management`
-   - Import the SQL file into your database
+## Core Features
 
-3. Configure database connection:
-   - Open `public/database.php`
-   - Update the database credentials if necessary
+- Role-based authentication and authorization for Administrator, Pharmacist, and Staff.
+- Dashboard variants for each role with quick access to relevant modules.
+- Inventory lifecycle management with stock updates, logs, alerts, and reports.
+- Billing and sales workflows including hold cart, invoice view, and sales records.
+- Purchase management with line items, settlements, due tracking, and supplier payables.
+- Sales return and purchase return workflows with auditing fields.
+- Prescription management with itemized medicine details and status logs.
+- Customer ledger support with contact, visit, and spending summaries.
+- Backup and restore module with section password and run history tracking.
+- Branch and stock transfer entities for multi-branch operation scenarios.
+- CSV export/search/statistics APIs for operational integrations.
 
-4. Set up a local server:
-   - Use XAMPP, WAMP, MAMP, or any PHP server
-   - Place the project in your server's web directory
-   - Access the application via browser (e.g., `http://localhost/pharmacy-management-system/public`)
+## Technology Stack
 
-## Usage
+- Backend: PHP (procedural pages + model classes)
+- Database: MySQL / MariaDB
+- Frontend: HTML, CSS, Bootstrap 5, Bootstrap Icons, JavaScript
+- Charts and analytics visuals: Chart.js
+- Runtime environment: XAMPP (Apache + MariaDB)
 
-1. Register a new admin user or use the default credentials
-2. Log in to access the dashboard
-3. Navigate through the system using the dashboard menu
-4. Add medicines, manage inventory, process sales, and view reports
+## Project Structure
 
-## Contributions
+High-level folders and responsibilities:
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- app: bootstrap, authentication, configuration, database, and models.
+- public: browser-accessible pages for dashboards and business modules.
+- database: SQL dump and setup/migration utilities.
+- database/setup: migration and maintenance scripts.
+
+Main module groups inside public:
+
+- dashboard: role-based home pages.
+- inventory: stock views, alerts, bulk import, analytics reports.
+- sales: sell medicine, invoices, sales records, returns.
+- purchase: purchase flow, settlements, returns, supplier payables.
+- prescription: prescription management pages.
+- settings: backup/restore, branch management, cash register, permissions matrix, financial reports.
+- users: profile, user management, and activity log pages.
+- api: lightweight endpoints for CSV export, search, and statistics.
+
+## Prerequisites
+
+- Windows/macOS/Linux with a local web stack (XAMPP recommended).
+- PHP 8.0+ (8.2 used in current environment).
+- MySQL 8+ or MariaDB 10.4+.
+- Web browser (Chrome/Edge/Firefox).
+
+## Installation and Setup
+
+1. Clone or copy this project into your web root.
+
+```bash
+git clone <your-repository-url>
+```
+
+2. Place the folder at:
+
+```text
+C:/xampp/htdocs/medical_management_new
+```
+
+3. Create a database named medical_management in phpMyAdmin or MySQL CLI.
+
+4. Import the schema dump:
+
+```text
+database/medical_management.sql
+```
+
+5. Open configuration file and verify DB credentials:
+
+```text
+app/Config/config.php
+```
+
+6. Optional but recommended after import: run migration to ensure latest columns/tables/indexes exist.
+
+```text
+http://localhost/medical_management_new/database/setup/migrate.php
+```
+
+7. Optional admin seed/update script:
+
+```text
+http://localhost/medical_management_new/database/setup/seed_admin.php
+```
+
+8. Start application:
+
+```text
+http://localhost/medical_management_new/public
+```
+
+## Configuration
+
+Primary configuration constants are in app/Config/config.php:
+
+- DB_HOST
+- DB_NAME
+- DB_USER
+- DB_PASS
+- APP_NAME
+- BASE_URL
+- BACKUP_RESTORE_PASSWORD
+
+Important production checklist:
+
+- Change BACKUP_RESTORE_PASSWORD before exposing the app.
+- Use a strong database password and non-root database user.
+- Set secure server and PHP settings for production.
+- Keep BASE_URL aligned with your deployment path.
+
+## Usage and Typical Workflows
+
+### Login and Role Access
+
+1. Open the public login page.
+2. Sign in with a valid user.
+3. You are redirected to a role-specific dashboard.
+
+### Add and Sell Medicine
+
+1. Create or edit medicine records with category, price, stock, and expiry details.
+2. Use Sell Medicine page to add items and process the transaction.
+3. View generated invoice and sales records for history and audit.
+
+### Purchase and Supplier Flow
+
+1. Add supplier details.
+2. Create purchase with item lines and batch/expiry info.
+3. Record settlement payments and monitor due amounts.
+4. Process purchase returns when needed.
+
+### Return Management
+
+1. Open sales returns screen.
+2. Select sale reference and return quantity.
+3. Submit for approval and track status/refund details.
+
+### Inventory Control
+
+1. Use stock check and alert center to identify low stock or risk items.
+2. Review reorder suggestions and analytics pages.
+3. Use bulk CSV import for high-volume inventory updates.
+
+### Backup and Restore
+
+1. Open Backup & Restore in settings.
+2. Enter section password.
+3. Download full SQL snapshot or restore from SQL file (with confirmation).
+
+## Security and Operational Notes
+
+- CSRF token generation/verification is implemented for POST forms.
+- Session cookie hardening and common security headers are enabled.
+- Login flow includes rate limiting for repeated failed attempts.
+- Activity logs are captured for important operations.
+- Backup runs can be tracked using backup metadata tables.
+
+## API Endpoints
+
+Common utility endpoints under public/api:
+
+- export_csv.php
+- get_statistics.php
+- search.php
+
+These are intended for internal dashboard usage and operational exports.
+
+## Troubleshooting
+
+- Database connection failed:
+   Verify DB credentials in app/Config/config.php and ensure MariaDB/MySQL is running.
+
+- Missing columns or tables after old import:
+   Run database/setup/migrate.php from browser.
+
+- Backup/restore blocked:
+   Confirm BACKUP_RESTORE_PASSWORD matches the entered section password.
+
+- Access denied to a page:
+   Check logged-in role and permissions matrix settings.
+
+## Contribution Guide
+
+Contributions are welcome.
+
+Suggested contribution workflow:
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Keep changes focused and test key flows.
+4. Document schema or behavior changes clearly.
+5. Submit a pull request with summary, screenshots (if UI), and migration notes.
+
+Recommended quality checks before PR:
+
+- Verify login and role routing.
+- Test sales, returns, and purchase workflows impacted by your changes.
+- Confirm migrations are idempotent and safe on existing databases.
+- Preserve CSRF and role checks on new forms/pages.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+No license file is currently included in this repository.
 
-## Contact
+If you plan to open-source this project, add a LICENSE file (for example MIT, Apache-2.0, or GPL-3.0) and update this section accordingly.
 
-For any questions or suggestions, please open an issue in this repository. 
+## Acknowledgments
+
+- Bootstrap and Bootstrap Icons for UI framework and icons.
+- Chart.js for data visualization.
+- XAMPP/MariaDB community tooling for local development and testing.
