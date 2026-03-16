@@ -10,7 +10,7 @@ if (!is_dir($backupDir)) {
 }
 
 $timestamp = date('Ymd_His');
-$fileName = 'scheduled_backup_' . $timestamp . '.sql';
+$fileName = 'pharmaflow_pro_scheduled_backup_' . $timestamp . '.sql';
 $filePath = $backupDir . '/' . $fileName;
 
 try {
@@ -54,7 +54,7 @@ try {
     $ins->execute();
 
     // Retention: keep last 30 files
-    $files = glob($backupDir . '/scheduled_backup_*.sql');
+    $files = glob($backupDir . '/pharmaflow_pro_scheduled_backup_*.sql');
     rsort($files);
     $toDelete = array_slice($files, 30);
     foreach ($toDelete as $f) {

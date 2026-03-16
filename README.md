@@ -58,6 +58,109 @@ PharmaFlow Pro helps pharmacy teams manage end-to-end operations:
 
 ## Project Structure
 
+```text
+pharmaflow_pro/
+|-- add_initial_stock.php
+|-- check_db.php
+|-- index.php
+|-- Project_Abstract_and_ER_Model.txt
+|-- README.md
+|-- app/
+|   |-- auth.php
+|   |-- init.php
+|   |-- Config/
+|   |   `-- config.php
+|   |-- Core/
+|   |   `-- Database.php
+|   `-- Models/
+|       |-- ActivityLog.php
+|       |-- CashRegister.php
+|       |-- Category.php
+|       |-- Customer.php
+|       |-- Inventory.php
+|       |-- Medicine.php
+|       |-- Prescription.php
+|       |-- Purchase.php
+|       |-- Returns.php
+|       |-- Sale.php
+|       |-- Supplier.php
+|       `-- User.php
+|-- database/
+|   |-- medical_management.sql
+|   `-- setup/
+|       |-- add_new_features.php
+|       |-- migrate.php
+|       |-- scheduled_backup.php
+|       |-- seed_admin.php
+|       |-- setup_database.php
+|       |-- update_medicines_table.php
+|       |-- update_suppliers_table.php
+|       `-- verify_admin.php
+`-- public/
+   |-- index.php
+   |-- logout.php
+   |-- styles.css
+   |-- add/
+   |   |-- add-medicine.php
+   |   |-- categories.php
+   |   `-- edit-medicine.php
+   |-- api/
+   |   |-- export_csv.php
+   |   |-- get_statistics.php
+   |   `-- search.php
+   |-- check/
+   |   `-- check-stock.php
+   |-- dashboard/
+   |   |-- dashboard.php
+   |   |-- pharmacist_dashboard.php
+   |   `-- staff_dashboard.php
+   |-- expiration/
+   |   `-- expiration-management.php
+   |-- inventory/
+   |   |-- alert_center.php
+   |   |-- alerts.php
+   |   |-- bulk_import.php
+   |   |-- check_stock.php
+   |   |-- inventory_report.php
+   |   `-- reorder_suggestions.php
+   |-- prescription/
+   |   `-- prescription-management.php
+   |-- purchase/
+   |   |-- purchase-history.php
+   |   |-- purchase-management.php
+   |   |-- purchase-returns.php
+   |   |-- settlements.php
+   |   `-- supplier-payables.php
+   |-- sales/
+   |   |-- hold_cart_api.php
+   |   |-- invoice.php
+   |   |-- returns.php
+   |   |-- sales_records.php
+   |   `-- sell_medicine.php
+   |-- settings/
+   |   |-- backup_restore.php
+   |   |-- branch_management.php
+   |   |-- cash_register.php
+   |   |-- customer_ledger.php
+   |   |-- financial_reports.php
+   |   |-- health_checks.php
+   |   |-- permissions_matrix.php
+   |   `-- stock_analytics.php
+   |-- statistics/
+   |   `-- statistics.php
+   |-- supplier/
+   |   `-- supplier-management.php
+   |-- top_sales/
+   |   `-- top-selling.php
+   |-- update/
+   |   `-- update-stock.php
+   `-- users/
+      |-- activity_log.php
+      |-- add_user.php
+      |-- manage_users.php
+      `-- profile.php
+```
+
 High-level folders and responsibilities:
 
 - app: bootstrap, authentication, configuration, database, and models.
@@ -94,7 +197,7 @@ git clone <your-repository-url>
 2. Place the folder at:
 
 ```text
-C:/xampp/htdocs/medical_management_new
+C:/xampp/htdocs/pharmaflow_pro
 ```
 
 3. Create a database named medical_management in phpMyAdmin or MySQL CLI.
@@ -114,19 +217,19 @@ app/Config/config.php
 6. Optional but recommended after import: run migration to ensure latest columns/tables/indexes exist.
 
 ```text
-http://localhost/medical_management_new/database/setup/migrate.php
+http://localhost/pharmaflow_pro/database/setup/migrate.php
 ```
 
 7. Optional admin seed/update script:
 
 ```text
-http://localhost/medical_management_new/database/setup/seed_admin.php
+http://localhost/pharmaflow_pro/database/setup/seed_admin.php
 ```
 
 8. Start application:
 
 ```text
-http://localhost/medical_management_new/public
+http://localhost/pharmaflow_pro/public
 ```
 
 ## Configuration

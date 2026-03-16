@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'backup') {
         try {
             $tables = $db->query("SHOW TABLES")->fetchAll(PDO::FETCH_NUM);
-            $filename = 'pharmacy_backup_' . date('Ymd_His') . '.sql';
+            $filename = 'pharmaflow_pro_backup_' . date('Ymd_His') . '.sql';
             $content = "-- PharmaFlow Pro SQL Backup\n";
             $content .= "-- Generated: " . date('Y-m-d H:i:s') . "\n\n";
             $content .= "SET FOREIGN_KEY_CHECKS = 0;\n\n";
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messageType = 'danger';
             try {
                 $ins = $db->prepare("INSERT INTO backup_runs (file_name, file_size, checksum_sha256, run_status, notes, created_by) VALUES (:file_name, 0, NULL, 'FAILED', :notes, :created_by)");
-                $ins->bindValue(':file_name', 'pharmacy_backup_' . date('Ymd_His') . '.sql');
+                $ins->bindValue(':file_name', 'pharmaflow_pro_backup_' . date('Ymd_His') . '.sql');
                 $ins->bindValue(':notes', $e->getMessage());
                 $ins->bindValue(':created_by', (int)($_SESSION['currentUser']['user_id'] ?? 0), PDO::PARAM_INT);
                 $ins->execute();

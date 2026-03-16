@@ -7,7 +7,7 @@ define('DB_PASS', '');
 
 // Application Configuration
 define('APP_NAME', 'PharmaFlow Pro');
-define('BASE_URL', '/medical_management_new/public');
+define('BASE_URL', '/pharmaflow_pro/public');
 
 // Security: change this in production
 define('BACKUP_RESTORE_PASSWORD', 'ChangeThis@123');
