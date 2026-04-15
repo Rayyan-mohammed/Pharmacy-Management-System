@@ -25,6 +25,22 @@ It combines inventory, billing, purchases, suppliers, prescriptions, returns, ca
 - Charts: Chart.js
 - Local environment: XAMPP (Apache + MariaDB)
 
+## 🚀 Live Demo & Deployment (AWS)
+
+**Live Demo Link:** [http://pharmaflowpro-env.eba-qmekzfkj.us-east-1.elasticbeanstalk.com/](http://pharmaflowpro-env.eba-qmekzfkj.us-east-1.elasticbeanstalk.com/)
+
+PharmaFlow Pro is fully deployed on **Amazon Web Services (AWS)**, leveraging a robust, scalable, and highly available cloud architecture. 
+
+### AWS Architecture & Services Used:
+
+- **AWS Elastic Beanstalk (Compute & Orchestration):** Handles the core PHP application hosting, automated deployment, capacity provisioning, load balancing, and auto-scaling to manage varying traffic loads seamlessly.
+- **Amazon EC2 (Elastic Compute Cloud):** Provides the underlying virtual servers that power the Elastic Beanstalk environment, ensuring high-performance secure compute capacity.
+- **Amazon RDS - MySQL (Managed Database):** Hosts the relational database in a fully managed environment. It provides automated backups, multi-AZ reliability for failover support, patching, and reliable performance without manual database maintenance.
+- **Amazon CloudWatch:** Used for continuous monitoring of application health, resource tracking, and operational logging. It provides actionable insights and alarms to proactively manage the infrastructure.
+- **EBS Volume Monitoring:** Actively tracks block storage volumes attached to the EC2 instances, ensuring optimal disk I/O performance and preventing storage bottlenecks during peak pharmacy operations.
+
+To connect the live environment, runtime environment variables (`DB_HOST`, `DB_USER`, `DB_PASS`, and `DB_NAME`) are securely configured within the Elastic Beanstalk console to seamlessly point to the RDS endpoint, mapped directly via `app/Config/config.php`.
+
 ## Project Structure
 
 ```text
